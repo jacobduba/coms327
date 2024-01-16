@@ -1,0 +1,4 @@
+If you use version control, you can redirect your commit logs to CHANGELOG
+
+$ git log > CHANGELOG
+

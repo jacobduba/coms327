@@ -1,0 +1,17 @@
+Knight's Tour Solution by Jacob Duba <jduba@iastate.edu>
+
+Building
+========
+
+$ make
+
+Running
+=======
+
+$ ./tour
+
+Clean
+=====
+
+$ make clean
+
