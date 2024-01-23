@@ -1,4 +1,17 @@
-Tue Jan 23 01:11:05 PM CST 2024
-===============================
+commit 3ba3ea04efef606c064609cbd50025d9573289ca
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Tue Jan 23 13:27:40 2024 -0600
 
-Implemented Knight's Tour.
+    Ignore tarballs
+
+commit 0246c5cfa0df52cc4f4943113ad64d8510eff391
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Tue Jan 16 13:51:37 2024 -0600
+
+    Use version control.
+
+commit 33323c229fa57da201d0b1570b0eded4cfb550e8
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Fri Jan 12 17:15:32 2024 -0600
+
+    Commit
