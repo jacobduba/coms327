@@ -18,7 +18,6 @@
 struct cord {
   int x;
   int y;
-  char type;
 };
 
 void print(char terrain[MAP_Y_HEIGHT][MAP_X_WIDTH]) {
@@ -28,6 +27,21 @@ void print(char terrain[MAP_Y_HEIGHT][MAP_X_WIDTH]) {
     }
     printf("\n");
   }
+}
+
+void place_seed(char terrain[MAP_Y_HEIGHT][MAP_X_WIDTH], int *head,
+                struct cord generation_queue[], int x, int y, char type) {
+
+  struct cord tall_grass_seed_1 = {rand() % MAP_X_WIDTH, rand() % MAP_Y_HEIGHT};
+
+  terrain[tall_grass_seed_1.y][tall_grass_seed_1.x] = type;
+
+  generation_queue[*head] = (struct cord){
+      tall_grass_seed_1.x,
+      tall_grass_seed_1.y,
+  };
+
+  *head += 1;
 }
 
 int main(int argc, char *argv[]) {
@@ -41,61 +55,43 @@ int main(int argc, char *argv[]) {
     }
   }
 
-  struct cord generation_queue[MAP_X_WIDTH * MAP_Y_HEIGHT * 4];
+  struct cord generation_queue[MAP_X_WIDTH * MAP_Y_HEIGHT];
 
   int head, tail = 0;
 
-  int tall_grass_seed_1_x = rand() % MAP_X_WIDTH;
-  int tall_grass_seed_1_y = rand() % MAP_Y_HEIGHT;
-  generation_queue[head++] =
-      (struct cord){tall_grass_seed_1_x, tall_grass_seed_1_y, TALL_GRASS};
-
-  int tall_grass_seed_2_x = rand() % MAP_X_WIDTH;
-  int tall_grass_seed_2_y = rand() % MAP_Y_HEIGHT;
-  generation_queue[head++] =
-      (struct cord){tall_grass_seed_2_x, tall_grass_seed_2_y, TALL_GRASS};
-
-  int water_seed_x = rand() % MAP_X_WIDTH;
-  int water_seed_y = rand() % MAP_Y_HEIGHT;
-  generation_queue[head++] = (struct cord){water_seed_x, water_seed_y, WATER};
-
-  int clearing_seed_1_x = rand() % MAP_X_WIDTH;
-  int clearing_seed_1_y = rand() % MAP_Y_HEIGHT;
-  generation_queue[head++] =
-      (struct cord){clearing_seed_1_x, clearing_seed_1_y, SHORT_GRASS};
-
-  int clearing_seed_2_x = rand() % MAP_X_WIDTH;
-  int clearing_seed_2_y = rand() % MAP_Y_HEIGHT;
-  generation_queue[head++] =
-      (struct cord){clearing_seed_2_x, clearing_seed_2_y, SHORT_GRASS};
-
-  int mountain_seed_x = rand() % MAP_X_WIDTH;
-  int mountain_seed_y = rand() % MAP_Y_HEIGHT;
-  generation_queue[head++] =
-      (struct cord){mountain_seed_x, mountain_seed_y, BOULDER};
+  place_seed(terrain, &head, generation_queue, rand() % MAP_X_WIDTH,
+             rand() % MAP_Y_HEIGHT, TALL_GRASS);
+  place_seed(terrain, &head, generation_queue, rand() % MAP_X_WIDTH,
+             rand() % MAP_Y_HEIGHT, TALL_GRASS);
+  place_seed(terrain, &head, generation_queue, rand() % MAP_X_WIDTH,
+             rand() % MAP_Y_HEIGHT, SHORT_GRASS);
+  place_seed(terrain, &head, generation_queue, rand() % MAP_X_WIDTH,
+             rand() % MAP_Y_HEIGHT, SHORT_GRASS);
+  place_seed(terrain, &head, generation_queue, rand() % MAP_X_WIDTH,
+             rand() % MAP_Y_HEIGHT, WATER);
+  place_seed(terrain, &head, generation_queue, rand() % MAP_X_WIDTH,
+             rand() % MAP_Y_HEIGHT, BOULDER);
+  place_seed(terrain, &head, generation_queue, rand() % MAP_X_WIDTH,
+             rand() % MAP_Y_HEIGHT, TREE);
 
   while (head - tail > 0) {
     struct cord cur = generation_queue[tail++];
 
-    // printf("y: %d, x: %d, type: %c\n", cur.y, cur.x, cur.type);
-
-    if (terrain[cur.y][cur.x] != EMPTY) {
-      continue;
-    }
-
-    terrain[cur.y][cur.x] = cur.type;
-
     if (cur.x > 0 && terrain[cur.y][cur.x - 1] == EMPTY) {
-      generation_queue[head++] = (struct cord){cur.x - 1, cur.y, cur.type};
+      terrain[cur.y][cur.x - 1] = terrain[cur.y][cur.x];
+      generation_queue[head++] = (struct cord){cur.x - 1, cur.y};
     }
     if (cur.x < MAP_X_WIDTH - 1 && terrain[cur.y][cur.x + 1] == EMPTY) {
-      generation_queue[head++] = (struct cord){cur.x + 1, cur.y, cur.type};
+      terrain[cur.y][cur.x + 1] = terrain[cur.y][cur.x];
+      generation_queue[head++] = (struct cord){cur.x + 1, cur.y};
     }
     if (cur.y > 0 && terrain[cur.y - 1][cur.x] == EMPTY) {
-      generation_queue[head++] = (struct cord){cur.x, cur.y - 1, cur.type};
+      terrain[cur.y - 1][cur.x] = terrain[cur.y][cur.x];
+      generation_queue[head++] = (struct cord){cur.x, cur.y - 1};
     }
     if (cur.y < MAP_Y_HEIGHT - 1 && terrain[cur.y + 1][cur.x] == EMPTY) {
-      generation_queue[head++] = (struct cord){cur.x, cur.y + 1, cur.type};
+      terrain[cur.y + 1][cur.x] = terrain[cur.y][cur.x];
+      generation_queue[head++] = (struct cord){cur.x, cur.y + 1};
     }
     // print(terrain);
   }
