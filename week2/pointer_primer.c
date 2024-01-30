@@ -50,11 +50,14 @@ void swap_also_wrong(int *x, int *y) {
   printf("x = %d, y = %d\n", *x, *y);
 }
 
-// void populate_foo(struct foo, int i, float d, char *s) {
-//   f.i = i;
-//   f.f = d;
-//   f.s = s;
-// }
+// We have three different dereference operators in C:
+// The dereferene operator: *
+// The arrow operator: -> dereference
+void populate_foo(struct foo *f, int i, float d, char *s) {
+  f->i = i;
+  f->f = d;
+  f->s = s;
+}
 
 // How to read variable declarations in C: Start with the variable name.
 //                                         Go right when we can.
@@ -78,7 +81,7 @@ int main(int argc, char *argv[]) {
   f.f = 3.14;
   f.s = "Hello world";
 
-  // populate_foo(f, 0, 3.14, "Hello World!")
+  populate_foo(&f, 0, 3.14, "Hello World!");
 
   printf("%d %f %s\n", f.i, f.f, f.s);
 

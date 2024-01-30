@@ -20,7 +20,7 @@ struct cord {
   int y;
 };
 
-void print(char terrain[MAP_Y_HEIGHT][MAP_X_WIDTH]) {
+void print_terrain(char terrain[MAP_Y_HEIGHT][MAP_X_WIDTH]) {
   for (int y = 0; y < MAP_Y_HEIGHT; y++) {
     for (int x = 0; x < MAP_X_WIDTH; x++) {
       printf("%c", terrain[y][x]);
@@ -29,8 +29,9 @@ void print(char terrain[MAP_Y_HEIGHT][MAP_X_WIDTH]) {
   }
 }
 
-void place_seed(char terrain[MAP_Y_HEIGHT][MAP_X_WIDTH], int *head,
-                struct cord generation_queue[], int x, int y, char type) {
+void place_seed_in_gen_queue(char terrain[MAP_Y_HEIGHT][MAP_X_WIDTH], int *head,
+                             struct cord generation_queue[], int x, int y,
+                             char type) {
 
   struct cord tall_grass_seed_1 = {rand() % MAP_X_WIDTH, rand() % MAP_Y_HEIGHT};
 
@@ -42,6 +43,27 @@ void place_seed(char terrain[MAP_Y_HEIGHT][MAP_X_WIDTH], int *head,
   };
 
   *head += 1;
+}
+
+/*
+ * Returns 1 if the pokemart has not been placed
+ */
+int try_place_pokemart_ret_1_if_fail(char terrain[MAP_Y_HEIGHT][MAP_X_WIDTH]) {
+  struct cord c = {rand() % (MAP_X_WIDTH - 3) + 1,
+                   rand() % (MAP_Y_HEIGHT - 3) + 1};
+
+  if (terrain[c.y][c.x] == ROAD || terrain[c.y][c.x] == WATER ||
+      terrain[c.y + 1][c.x] == ROAD || terrain[c.y][c.x] == WATER ||
+      terrain[c.y][c.x + 1] == ROAD || terrain[c.y][c.x + 1] == WATER ||
+      terrain[c.y + 1][c.x + 1] == ROAD || terrain[c.y + 1][c.x + 1] == WATER) {
+    return 1;
+  }
+
+  // if (terrain[c.y - 1][c.x] != ROAD || terrain[c.y - 1][c.x - 1] != 1) {
+  // }
+
+  terrain[c.y][c.x] = POKEMON_CENTER;
+  return 0;
 }
 
 int main(int argc, char *argv[]) {
@@ -58,20 +80,24 @@ int main(int argc, char *argv[]) {
   struct cord generation_queue[MAP_X_WIDTH * MAP_Y_HEIGHT];
   int head, tail = 0;
 
-  place_seed(terrain, &head, generation_queue, rand() % MAP_X_WIDTH,
-             rand() % MAP_Y_HEIGHT, TALL_GRASS);
-  place_seed(terrain, &head, generation_queue, rand() % MAP_X_WIDTH,
-             rand() % MAP_Y_HEIGHT, TALL_GRASS);
-  place_seed(terrain, &head, generation_queue, rand() % MAP_X_WIDTH,
-             rand() % MAP_Y_HEIGHT, SHORT_GRASS);
-  place_seed(terrain, &head, generation_queue, rand() % MAP_X_WIDTH,
-             rand() % MAP_Y_HEIGHT, SHORT_GRASS);
-  place_seed(terrain, &head, generation_queue, rand() % MAP_X_WIDTH,
-             rand() % MAP_Y_HEIGHT, WATER);
-  place_seed(terrain, &head, generation_queue, rand() % MAP_X_WIDTH,
-             rand() % MAP_Y_HEIGHT, BOULDER);
-  place_seed(terrain, &head, generation_queue, rand() % MAP_X_WIDTH,
-             rand() % MAP_Y_HEIGHT, TREE);
+  place_seed_in_gen_queue(terrain, &head, generation_queue,
+                          rand() % MAP_X_WIDTH, rand() % MAP_Y_HEIGHT,
+                          TALL_GRASS);
+  place_seed_in_gen_queue(terrain, &head, generation_queue,
+                          rand() % MAP_X_WIDTH, rand() % MAP_Y_HEIGHT,
+                          TALL_GRASS);
+  place_seed_in_gen_queue(terrain, &head, generation_queue,
+                          rand() % MAP_X_WIDTH, rand() % MAP_Y_HEIGHT,
+                          SHORT_GRASS);
+  place_seed_in_gen_queue(terrain, &head, generation_queue,
+                          rand() % MAP_X_WIDTH, rand() % MAP_Y_HEIGHT,
+                          SHORT_GRASS);
+  place_seed_in_gen_queue(terrain, &head, generation_queue,
+                          rand() % MAP_X_WIDTH, rand() % MAP_Y_HEIGHT, WATER);
+  place_seed_in_gen_queue(terrain, &head, generation_queue,
+                          rand() % MAP_X_WIDTH, rand() % MAP_Y_HEIGHT, BOULDER);
+  place_seed_in_gen_queue(terrain, &head, generation_queue,
+                          rand() % MAP_X_WIDTH, rand() % MAP_Y_HEIGHT, TREE);
 
   while (head - tail > 0) {
     struct cord cur = generation_queue[tail++];
@@ -104,11 +130,6 @@ int main(int argc, char *argv[]) {
       }
     }
   }
-
-  // struct cord west_path_entrance = {0, rand() % (MAP_Y_HEIGHT - 2) + 1};
-  // struct cord east_path_entrance = {MAP_X_WIDTH - 1,
-  //                                   rand() % (MAP_Y_HEIGHT - 2) + 1};
-  // terrain[east_path_entrance.y][east_path_entrance.x] = ROAD;
 
   int west_path_y = rand() % (MAP_Y_HEIGHT - 2) + 1;
   int east_path_y = rand() % (MAP_Y_HEIGHT - 2) + 1;
@@ -153,12 +174,11 @@ int main(int argc, char *argv[]) {
     terrain[cur_y][cur_x] = ROAD;
     cur_y++;
   }
-  //   struct cord north_path_entrance = {rand() % (MAP_X_WIDTH - 2) + 1, 0;
-  // terrain[north_path_entrance.y][north_path_entrance.x] = ROAD;
 
-  // struct cord south_path_entrance = {rand() % (MAP_X_WIDTH - 2) + 1,
-  //                                    MAP_Y_HEIGHT - 1};
-  // terrain[south_path_entrance.y][south_path_entrance.x] = ROAD;
+  int pokemon_center_not_placed = 1;
+  do {
+    pokemon_center_not_placed = try_place_pokemart_ret_1_if_fail(terrain);
+  } while (pokemon_center_not_placed);
 
-  print(terrain);
+  print_terrain(terrain);
 }
