@@ -48,7 +48,7 @@ void place_seed_in_gen_queue(char terrain[MAP_Y_HEIGHT][MAP_X_WIDTH], int *head,
 /*
  * Returns 1 if the pokemart has not been placed
  */
-int try_place_pokemart_ret_1_if_fail(char terrain[MAP_Y_HEIGHT][MAP_X_WIDTH]) {
+int try_place_building(char terrain[MAP_Y_HEIGHT][MAP_X_WIDTH], char building) {
   struct cord c = {rand() % (MAP_X_WIDTH - 3) + 1,
                    rand() % (MAP_Y_HEIGHT - 3) + 1};
 
@@ -59,10 +59,18 @@ int try_place_pokemart_ret_1_if_fail(char terrain[MAP_Y_HEIGHT][MAP_X_WIDTH]) {
     return 1;
   }
 
-  // if (terrain[c.y - 1][c.x] != ROAD || terrain[c.y - 1][c.x - 1] != 1) {
-  // }
+  if (terrain[c.y - 1][c.x] != ROAD && terrain[c.y - 1][c.x + 1] != ROAD &&
+      terrain[c.y][c.x - 1] != ROAD && terrain[c.y][c.x + 2] != ROAD &&
+      terrain[c.y + 1][c.x - 1] != ROAD && terrain[c.y + 2][c.x] != ROAD &&
+      terrain[c.y + 2][c.x + 1] != ROAD) {
+    return 1;
+  }
 
-  terrain[c.y][c.x] = POKEMON_CENTER;
+  terrain[c.y][c.x] = building;
+  terrain[c.y + 1][c.x] = building;
+  terrain[c.y][c.x + 1] = building;
+  terrain[c.y + 1][c.x + 1] = building;
+
   return 0;
 }
 
@@ -177,8 +185,13 @@ int main(int argc, char *argv[]) {
 
   int pokemon_center_not_placed = 1;
   do {
-    pokemon_center_not_placed = try_place_pokemart_ret_1_if_fail(terrain);
+    pokemon_center_not_placed = try_place_building(terrain, POKEMON_CENTER);
   } while (pokemon_center_not_placed);
+
+  int pokemart_not_placed = 1;
+  do {
+    pokemart_not_placed = try_place_building(terrain, POKEMART);
+  } while (pokemart_not_placed);
 
   print_terrain(terrain);
 }
