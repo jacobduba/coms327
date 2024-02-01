@@ -1,3 +1,6 @@
+#include "sc_heap.h"
+#include <limits.h>
+#include <linux/limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
@@ -8,12 +11,12 @@
 #define EMPTY 'E'
 #define BOULDER '%'
 #define TREE '^'
-#define ROAD '#'
-#define POKEMON_CENTER 'C'
-#define POKEMART 'M'
 #define TALL_GRASS ':'
 #define SHORT_GRASS '.'
 #define WATER '~'
+#define ROAD '#'
+#define POKEMON_CENTER 'C'
+#define POKEMART 'M'
 
 struct cord {
   int x;
@@ -42,7 +45,7 @@ void place_seed_in_gen_queue(char terrain[MAP_Y_HEIGHT][MAP_X_WIDTH], int *head,
       tall_grass_seed_1.y,
   };
 
-  *head += 1;
+  (*head)++;
 }
 
 /*
@@ -73,6 +76,169 @@ int try_place_building(char terrain[MAP_Y_HEIGHT][MAP_X_WIDTH], char building) {
 
   return 0;
 }
+
+int bfs_explore_generation(
+    char terrain[MAP_Y_HEIGHT][MAP_X_WIDTH],
+    struct cord generation_queue[MAP_Y_HEIGHT * MAP_X_WIDTH], int *head,
+    int *tail) {
+
+  while (*head - *tail > 0) {
+    struct cord cur = generation_queue[(*tail)++];
+
+    if (cur.x > 0 && terrain[cur.y][cur.x - 1] == EMPTY) {
+      terrain[cur.y][cur.x - 1] = terrain[cur.y][cur.x];
+      generation_queue[(*head)++] = (struct cord){cur.x - 1, cur.y};
+    }
+
+    if (cur.x < MAP_X_WIDTH - 1 && terrain[cur.y][cur.x + 1] == EMPTY) {
+      terrain[cur.y][cur.x + 1] = terrain[cur.y][cur.x];
+      generation_queue[(*head)++] = (struct cord){cur.x + 1, cur.y};
+    }
+
+    if (cur.y > 0 && terrain[cur.y - 1][cur.x] == EMPTY) {
+      terrain[cur.y - 1][cur.x] = terrain[cur.y][cur.x];
+      generation_queue[(*head)++] = (struct cord){cur.x, cur.y - 1};
+    }
+
+    if (cur.y < MAP_Y_HEIGHT - 1 && terrain[cur.y + 1][cur.x] == EMPTY) {
+      terrain[cur.y + 1][cur.x] = terrain[cur.y][cur.x];
+      generation_queue[(*head)++] = (struct cord){cur.x, cur.y + 1};
+    }
+  }
+  return 0;
+}
+
+int place_boulders(char terrain[MAP_Y_HEIGHT][MAP_X_WIDTH]) {
+  for (int y = 0; y < MAP_Y_HEIGHT; y++) {
+    for (int x = 0; x < MAP_X_WIDTH; x++) {
+      if (x == 0 || y == 0 || x == MAP_X_WIDTH - 1 || y == MAP_Y_HEIGHT - 1) {
+        terrain[y][x] = BOULDER;
+      }
+    }
+  }
+  return 0;
+}
+
+// int get_terrain_cost(char type) {
+//   switch (type) {
+//   case SHORT_GRASS:
+//     return 10;
+//   case TALL_GRASS:
+//     return 15;
+//   case BOULDER:
+//     return 40;
+//   case WATER:
+//     return 80;
+//   case TREE:
+//     return 25;
+//   default:
+//     return 100;
+//   }
+// }
+
+// void generate_path_explore_neighbor(char terrain[MAP_Y_HEIGHT][MAP_X_WIDTH],
+//                                     int dist[MAP_Y_HEIGHT][MAP_X_WIDTH],
+//                                     bool visited[MAP_Y_HEIGHT][MAP_X_WIDTH],
+//                                     struct cord
+//                                     prev[MAP_Y_HEIGHT][MAP_X_WIDTH], struct
+//                                     cord new_c, struct cord old_c, int d,
+//                                     struct sc_heap *heap) {
+//   if (1 > new_c.x || new_c.x >= MAP_X_WIDTH - 1 || 1 > new_c.y ||
+//       new_c.y >= MAP_Y_HEIGHT - 1) {
+//     return;
+//   }
+
+//   if (visited[new_c.y][new_c.x]) {
+//     return;
+//   }
+
+//   int terrain_cost = get_terrain_cost(terrain[new_c.y][new_c.x]);
+
+//   int new_d = d + terrain_cost;
+
+//   // TODO possible memory leak?
+//   struct cord *new_c_heap;
+//   new_c_heap = malloc(sizeof(struct cord));
+//   *new_c_heap = (struct cord){new_c.x, new_c.y};
+//   // end
+
+//   if (new_d < dist[new_c.y][new_c.x]) {
+//     dist[new_c.y][new_c.x] = new_d;
+//     prev[new_c.y][new_c.x] = old_c;
+//     sc_heap_add(heap, new_d, new_c_heap);
+//   }
+// }
+
+// int generate_path(char terrain[MAP_Y_HEIGHT][MAP_X_WIDTH], struct cord start,
+//                   struct cord end) {
+//   int dist[MAP_Y_HEIGHT][MAP_X_WIDTH];
+
+//   for (int i = 0; i < MAP_Y_HEIGHT; i++) {
+//     for (int j = 0; j < MAP_X_WIDTH; j++) {
+//       dist[i][j] = INT_MAX;
+//     }
+//   }
+
+//   struct cord prev[MAP_Y_HEIGHT][MAP_X_WIDTH];
+
+//   bool visited[MAP_Y_HEIGHT][MAP_X_WIDTH];
+//   for (int i = 0; i < MAP_X_WIDTH; i++) {
+//     for (int j = 0; j < MAP_Y_HEIGHT; j++) {
+//       visited[i][j] = false;
+//     }
+//   }
+
+//   struct sc_heap heap;
+
+//   sc_heap_init(&heap, MAP_X_WIDTH * MAP_Y_HEIGHT);
+
+//   sc_heap_add(&heap, 0, &start);
+
+//   dist[start.x][start.y] = 0;
+
+//   struct sc_heap_data *elem;
+//   while (sc_heap_size(&heap)) {
+//     elem = sc_heap_pop(&heap);
+//     struct cord c = *(struct cord *)elem->data;
+//     int d = elem->key;
+//     // free(elem->data);
+
+//     if (visited[c.y][c.x]) {
+//       continue;
+//     }
+
+//     visited[c.y][c.x] = true;
+
+//     struct cord south = (struct cord){c.x, c.y + 1};
+//     generate_path_explore_neighbor(terrain, dist, visited, prev, south, c, d,
+//                                    &heap);
+//     struct cord north = (struct cord){c.x, c.y - 1};
+//     generate_path_explore_neighbor(terrain, dist, visited, prev, north, c, d,
+//                                    &heap);
+//     struct cord west = (struct cord){c.x - 1, c.y};
+//     generate_path_explore_neighbor(terrain, dist, visited, prev, west, c, d,
+//                                    &heap);
+
+//     struct cord east = (struct cord){c.x + 1, c.y};
+//     generate_path_explore_neighbor(terrain, dist, visited, prev, east, c, d,
+//                                    &heap);
+//   }
+
+//   // for (int y = 0; y < MAP_Y_HEIGHT; y++) {
+//   //   for (int x = 0; x < MAP_X_WIDTH; x++) {
+//   //     printf("(%d, %d, %d)", visited[y][x], prev[y][x].x, prev[y][x].y);
+//   //   }
+//   //   printf("\n");
+//   // }
+//   struct cord cur = end;
+//   while (cur.x != start.x || cur.y != start.y) {
+//     terrain[cur.y][cur.x] = ROAD;
+//     cur = prev[cur.y][cur.x];
+//   }
+//   terrain[cur.y][cur.x] = ROAD;
+
+//   return 0;
+// }
 
 int main(int argc, char *argv[]) {
   srand(time(NULL));
@@ -107,37 +273,29 @@ int main(int argc, char *argv[]) {
   place_seed_in_gen_queue(terrain, &head, generation_queue,
                           rand() % MAP_X_WIDTH, rand() % MAP_Y_HEIGHT, TREE);
 
-  while (head - tail > 0) {
-    struct cord cur = generation_queue[tail++];
+  bfs_explore_generation(terrain, generation_queue, &head, &tail);
 
-    if (cur.x > 0 && terrain[cur.y][cur.x - 1] == EMPTY) {
-      terrain[cur.y][cur.x - 1] = terrain[cur.y][cur.x];
-      generation_queue[head++] = (struct cord){cur.x - 1, cur.y};
-    }
+  place_boulders(terrain);
 
-    if (cur.x < MAP_X_WIDTH - 1 && terrain[cur.y][cur.x + 1] == EMPTY) {
-      terrain[cur.y][cur.x + 1] = terrain[cur.y][cur.x];
-      generation_queue[head++] = (struct cord){cur.x + 1, cur.y};
-    }
+  // struct cord west_exit = (struct cord){0, rand() % (MAP_Y_HEIGHT - 2) + 1};
+  // struct cord east_exit =
+  //     (struct cord){MAP_X_WIDTH - 1, rand() % (MAP_Y_HEIGHT - 2) + 1};
+  // terrain[west_exit.y][west_exit.x] = ROAD;
+  // terrain[east_exit.y][east_exit.x] = ROAD;
+  // // Roads are not allowed on the sides, except for the exits. Thus those are
+  // // manually placed.
+  // generate_path(terrain, (struct cord){west_exit.x + 1, west_exit.y},
+  //               (struct cord){east_exit.x - 1, east_exit.y});
 
-    if (cur.y > 0 && terrain[cur.y - 1][cur.x] == EMPTY) {
-      terrain[cur.y - 1][cur.x] = terrain[cur.y][cur.x];
-      generation_queue[head++] = (struct cord){cur.x, cur.y - 1};
-    }
-
-    if (cur.y < MAP_Y_HEIGHT - 1 && terrain[cur.y + 1][cur.x] == EMPTY) {
-      terrain[cur.y + 1][cur.x] = terrain[cur.y][cur.x];
-      generation_queue[head++] = (struct cord){cur.x, cur.y + 1};
-    }
-  }
-
-  for (int y = 0; y < MAP_Y_HEIGHT; y++) {
-    for (int x = 0; x < MAP_X_WIDTH; x++) {
-      if (x == 0 || y == 0 || x == MAP_X_WIDTH - 1 || y == MAP_Y_HEIGHT - 1) {
-        terrain[y][x] = BOULDER;
-      }
-    }
-  }
+  // struct cord north_exit = (struct cord){rand() % (MAP_X_WIDTH - 2) + 1, 0};
+  // struct cord south_exit =
+  //     (struct cord){rand() % (MAP_X_WIDTH - 2) + 1, MAP_Y_HEIGHT - 1};
+  // terrain[north_exit.y][north_exit.x] = ROAD;
+  // terrain[south_exit.y][south_exit.x] = ROAD;
+  // // Roads are not allowed on the sides, except for the exits. Thus those are
+  // // manually placed.
+  // generate_path(terrain, (struct cord){north_exit.x, north_exit.y + 1},
+  //               (struct cord){south_exit.x, south_exit.y - 1});
 
   int west_path_y = rand() % (MAP_Y_HEIGHT - 2) + 1;
   int east_path_y = rand() % (MAP_Y_HEIGHT - 2) + 1;
