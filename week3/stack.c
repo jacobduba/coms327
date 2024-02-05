@@ -1,7 +1,7 @@
 #include "stack.h"
 #include <stdlib.h>
 
-int stack_init(struct stack *s) {
+int stack_init(stack_t *s) {
   // NUL is a special value for NULL pointers. It is defined (void *) 0
   s->top = NULL;
   s->size = 0;
@@ -9,11 +9,11 @@ int stack_init(struct stack *s) {
   return 0;
 }
 
-int stack_destroy(struct stack *s) {
+int stack_destroy(stack_t *s) {
   // Don't do this way. Ineffiecent.
   // while (!stack_pop(s));
 
-  stack_node *n;
+  stack_node_t *n;
   for (n = s->top; n; n = s->top) {
     s->top = s->top->next;
     free(n);
@@ -25,8 +25,8 @@ int stack_destroy(struct stack *s) {
   return 0;
 }
 
-int stack_push(struct stack *s, int d) {
-  stack_node *n;
+int stack_push(stack_t *s, int d) {
+  stack_node_t *n;
 
   // sizeof is a static (i.e., compile time) operator that returns the number of
   // bytes required to store the expression given as its parameter.
@@ -45,8 +45,8 @@ int stack_push(struct stack *s, int d) {
   return 0;
 }
 
-int stack_pop(struct stack *s, int *d) {
-  stack_node *n;
+int stack_pop(stack_t *s, int *d) {
+  stack_node_t *n;
 
   if (!s->top) {
     return 1;
@@ -61,7 +61,7 @@ int stack_pop(struct stack *s, int *d) {
   return 0;
 }
 
-int stack_top(struct stack *s, int *d) {
+int stack_top(stack_t *s, int *d) {
   if (!s->top) {
     return 1;
   }
@@ -71,6 +71,6 @@ int stack_top(struct stack *s, int *d) {
   return 0;
 }
 
-int stack_size(struct stack *s) { return s->size; }
+int stack_size(stack_t *s) { return s->size; }
 
-int stack_is_empty(struct stack *s) { return !s->size; }
+int stack_is_empty(stack_t *s) { return !s->size; }
