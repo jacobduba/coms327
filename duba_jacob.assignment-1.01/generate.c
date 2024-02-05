@@ -23,23 +23,23 @@ struct cord {
   int y;
 };
 
-void print_terrain(char terrain[MAP_Y_HEIGHT][MAP_X_WIDTH]) {
+void print_terrain(char terrain[MAP_X_WIDTH][MAP_Y_HEIGHT]) {
   for (int y = 0; y < MAP_Y_HEIGHT; y++) {
     for (int x = 0; x < MAP_X_WIDTH; x++) {
-      printf("%c", terrain[y][x]);
+      printf("%c", terrain[x][y]);
     }
     printf("\n");
   }
 }
 
 void place_seed_in_gen_queue(
-    char terrain[MAP_Y_HEIGHT][MAP_X_WIDTH], int *head,
+    char terrain[MAP_X_WIDTH][MAP_Y_HEIGHT], int *head,
     struct cord generation_queue[MAP_X_WIDTH * MAP_Y_HEIGHT], int x, int y,
     char type) {
 
   struct cord tall_grass_seed_1 = {rand() % MAP_X_WIDTH, rand() % MAP_Y_HEIGHT};
 
-  terrain[tall_grass_seed_1.y][tall_grass_seed_1.x] = type;
+  terrain[tall_grass_seed_1.x][tall_grass_seed_1.y] = type;
 
   generation_queue[*head] = tall_grass_seed_1;
 
@@ -49,71 +49,73 @@ void place_seed_in_gen_queue(
 /*
  * Returns 1 if the pokemart has not been placed
  */
-int try_place_building(char terrain[MAP_Y_HEIGHT][MAP_X_WIDTH], char building) {
+int try_place_building(char terrain[MAP_X_WIDTH][MAP_Y_HEIGHT], char building) {
   struct cord c = {rand() % (MAP_X_WIDTH - 3) + 1,
                    rand() % (MAP_Y_HEIGHT - 3) + 1};
 
-  if (terrain[c.y][c.x] == ROAD || terrain[c.y][c.x] == WATER ||
-      terrain[c.y + 1][c.x] == ROAD || terrain[c.y][c.x] == WATER ||
-      terrain[c.y][c.x + 1] == ROAD || terrain[c.y][c.x + 1] == WATER ||
-      terrain[c.y + 1][c.x + 1] == ROAD || terrain[c.y + 1][c.x + 1] == WATER) {
+  if (terrain[c.x][c.y] == ROAD || terrain[c.x][c.y] == WATER ||
+      terrain[c.x + 1][c.y] == ROAD || terrain[c.x][c.y] == WATER ||
+      terrain[c.x][c.y + 1] == ROAD || terrain[c.x][c.y + 1] == WATER ||
+      terrain[c.x + 1][c.y + 1] == ROAD || terrain[c.x + 1][c.y + 1] == WATER) {
     return 1;
   }
 
-  if (terrain[c.y - 1][c.x] != ROAD && terrain[c.y - 1][c.x + 1] != ROAD &&
-      terrain[c.y][c.x - 1] != ROAD && terrain[c.y][c.x + 2] != ROAD &&
-      terrain[c.y + 1][c.x - 1] != ROAD && terrain[c.y + 2][c.x] != ROAD &&
-      terrain[c.y + 2][c.x + 1] != ROAD) {
+  if (terrain[c.x - 1][c.y] != ROAD && terrain[c.x - 1][c.y + 1] != ROAD &&
+      terrain[c.x][c.y - 1] != ROAD && terrain[c.x][c.y + 2] != ROAD &&
+      terrain[c.x + 1][c.y - 1] != ROAD && terrain[c.x + 2][c.y] != ROAD &&
+      terrain[c.x + 2][c.y + 1] != ROAD) {
     return 1;
   }
 
-  terrain[c.y][c.x] = building;
-  terrain[c.y + 1][c.x] = building;
-  terrain[c.y][c.x + 1] = building;
-  terrain[c.y + 1][c.x + 1] = building;
+  terrain[c.x][c.y] = building;
+  terrain[c.x + 1][c.y] = building;
+  terrain[c.x][c.y + 1] = building;
+  terrain[c.x + 1][c.y + 1] = building;
 
   return 0;
 }
 
 int bfs_explore_generation(
-    char terrain[MAP_Y_HEIGHT][MAP_X_WIDTH],
-    struct cord generation_queue[MAP_Y_HEIGHT * MAP_X_WIDTH], int *head,
+    char terrain[MAP_X_WIDTH][MAP_Y_HEIGHT],
+    struct cord generation_queue[MAP_X_WIDTH * MAP_Y_HEIGHT], int *head,
     int *tail) {
 
   while (*head - *tail > 0) {
     struct cord cur = generation_queue[(*tail)++];
 
-    if (cur.x > 0 && terrain[cur.y][cur.x - 1] == EMPTY) {
-      terrain[cur.y][cur.x - 1] = terrain[cur.y][cur.x];
+    if (cur.x > 0 && terrain[cur.x - 1][cur.y] == EMPTY) {
+      terrain[cur.x - 1][cur.y] = terrain[cur.x][cur.y];
       generation_queue[(*head)++] = (struct cord){cur.x - 1, cur.y};
     }
 
-    if (cur.x < MAP_X_WIDTH - 1 && terrain[cur.y][cur.x + 1] == EMPTY) {
-      terrain[cur.y][cur.x + 1] = terrain[cur.y][cur.x];
+    if (cur.x < MAP_X_WIDTH - 1 && terrain[cur.x + 1][cur.y] == EMPTY) {
+      terrain[cur.x + 1][cur.y] = terrain[cur.x][cur.y];
       generation_queue[(*head)++] = (struct cord){cur.x + 1, cur.y};
     }
 
-    if (cur.y > 0 && terrain[cur.y - 1][cur.x] == EMPTY) {
-      terrain[cur.y - 1][cur.x] = terrain[cur.y][cur.x];
+    if (cur.y > 0 && terrain[cur.x][cur.y - 1] == EMPTY) {
+      terrain[cur.x][cur.y - 1] = terrain[cur.x][cur.y];
       generation_queue[(*head)++] = (struct cord){cur.x, cur.y - 1};
     }
 
-    if (cur.y < MAP_Y_HEIGHT - 1 && terrain[cur.y + 1][cur.x] == EMPTY) {
-      terrain[cur.y + 1][cur.x] = terrain[cur.y][cur.x];
+    if (cur.y < MAP_Y_HEIGHT - 1 && terrain[cur.x][cur.y + 1] == EMPTY) {
+      terrain[cur.x][cur.y + 1] = terrain[cur.x][cur.y];
       generation_queue[(*head)++] = (struct cord){cur.x, cur.y + 1};
     }
   }
+
   return 0;
 }
 
-int place_boulders(char terrain[MAP_Y_HEIGHT][MAP_X_WIDTH]) {
-  for (int y = 0; y < MAP_Y_HEIGHT; y++) {
-    for (int x = 0; x < MAP_X_WIDTH; x++) {
+int place_boulders(char terrain[MAP_X_WIDTH][MAP_Y_HEIGHT]) {
+  for (int x = 0; x < MAP_X_WIDTH; x++) {
+    for (int y = 0; y < MAP_Y_HEIGHT; y++) {
       if (x == 0 || y == 0 || x == MAP_X_WIDTH - 1 || y == MAP_Y_HEIGHT - 1) {
-        terrain[y][x] = BOULDER;
+        terrain[x][y] = BOULDER;
       }
     }
   }
+
   return 0;
 }
 
@@ -134,10 +136,10 @@ int get_terrain_cost(char type) {
   }
 }
 
-void generate_path_explore_neighbor(char terrain[MAP_Y_HEIGHT][MAP_X_WIDTH],
-                                    int dist[MAP_Y_HEIGHT][MAP_X_WIDTH],
-                                    bool visited[MAP_Y_HEIGHT][MAP_X_WIDTH],
-                                    struct cord prev[MAP_Y_HEIGHT][MAP_X_WIDTH],
+void generate_path_explore_neighbor(char terrain[MAP_X_WIDTH][MAP_Y_HEIGHT],
+                                    int dist[MAP_X_WIDTH][MAP_Y_HEIGHT],
+                                    bool visited[MAP_X_WIDTH][MAP_Y_HEIGHT],
+                                    struct cord prev[MAP_X_WIDTH][MAP_Y_HEIGHT],
                                     struct cord new_c, struct cord old_c, int d,
                                     struct sc_heap *heap) {
   if (1 > new_c.x || new_c.x >= MAP_X_WIDTH - 1 || 1 > new_c.y ||
@@ -145,11 +147,11 @@ void generate_path_explore_neighbor(char terrain[MAP_Y_HEIGHT][MAP_X_WIDTH],
     return;
   }
 
-  if (visited[new_c.y][new_c.x]) {
+  if (visited[new_c.x][new_c.y]) {
     return;
   }
 
-  int terrain_cost = get_terrain_cost(terrain[new_c.y][new_c.x]);
+  int terrain_cost = get_terrain_cost(terrain[new_c.x][new_c.y]);
 
   int new_d = d + terrain_cost;
 
@@ -159,29 +161,29 @@ void generate_path_explore_neighbor(char terrain[MAP_Y_HEIGHT][MAP_X_WIDTH],
   *new_c_heap = (struct cord){new_c.x, new_c.y};
   // end
 
-  if (new_d < dist[new_c.y][new_c.x]) {
-    dist[new_c.y][new_c.x] = new_d;
-    prev[new_c.y][new_c.x] = old_c;
+  if (new_d < dist[new_c.x][new_c.y]) {
+    dist[new_c.x][new_c.y] = new_d;
+    prev[new_c.x][new_c.y] = old_c;
     sc_heap_add(heap, new_d, new_c_heap);
   }
 }
 
-int generate_path(char terrain[MAP_Y_HEIGHT][MAP_X_WIDTH], struct cord start,
+int generate_path(char terrain[MAP_X_WIDTH][MAP_Y_HEIGHT], struct cord start,
                   struct cord end) {
-  int dist[MAP_Y_HEIGHT][MAP_X_WIDTH];
+  int dist[MAP_X_WIDTH][MAP_Y_HEIGHT];
 
-  for (int i = 0; i < MAP_Y_HEIGHT; i++) {
-    for (int j = 0; j < MAP_X_WIDTH; j++) {
-      dist[i][j] = INT_MAX;
+  for (int x = 0; x < MAP_X_WIDTH; x++) {
+    for (int y = 0; y < MAP_Y_HEIGHT; y++) {
+      dist[x][y] = INT_MAX;
     }
   }
 
-  struct cord prev[MAP_Y_HEIGHT][MAP_X_WIDTH];
+  struct cord prev[MAP_X_WIDTH][MAP_Y_HEIGHT];
 
-  bool visited[MAP_Y_HEIGHT][MAP_X_WIDTH];
-  for (int i = 0; i < MAP_Y_HEIGHT; i++) {
-    for (int j = 0; j < MAP_X_WIDTH; j++) {
-      visited[i][j] = false;
+  bool visited[MAP_X_WIDTH][MAP_Y_HEIGHT];
+  for (int x = 0; x < MAP_X_WIDTH; x++) {
+    for (int y = 0; y < MAP_Y_HEIGHT; y++) {
+      visited[x][y] = false;
     }
   }
 
@@ -200,11 +202,11 @@ int generate_path(char terrain[MAP_Y_HEIGHT][MAP_X_WIDTH], struct cord start,
     int d = elem->key;
     // free(elem->data);
 
-    if (visited[c.y][c.x]) {
+    if (visited[c.x][c.y]) {
       continue;
     }
 
-    visited[c.y][c.x] = true;
+    visited[c.x][c.y] = true;
 
     struct cord south = (struct cord){c.x, c.y + 1};
     generate_path_explore_neighbor(terrain, dist, visited, prev, south, c, d,
@@ -215,24 +217,17 @@ int generate_path(char terrain[MAP_Y_HEIGHT][MAP_X_WIDTH], struct cord start,
     struct cord west = (struct cord){c.x - 1, c.y};
     generate_path_explore_neighbor(terrain, dist, visited, prev, west, c, d,
                                    &heap);
-
     struct cord east = (struct cord){c.x + 1, c.y};
     generate_path_explore_neighbor(terrain, dist, visited, prev, east, c, d,
                                    &heap);
   }
 
-  // for (int y = 0; y < MAP_Y_HEIGHT; y++) {
-  //   for (int x = 0; x < MAP_X_WIDTH; x++) {
-  //     printf("(%d, %d, %d)", visited[y][x], prev[y][x].x, prev[y][x].y);
-  //   }
-  //   printf("\n");
-  // }
   struct cord cur = end;
   while (cur.x != start.x || cur.y != start.y) {
-    terrain[cur.y][cur.x] = ROAD;
-    cur = prev[cur.y][cur.x];
+    terrain[cur.x][cur.y] = ROAD;
+    cur = prev[cur.x][cur.y];
   }
-  terrain[cur.y][cur.x] = ROAD;
+  terrain[cur.x][cur.y] = ROAD;
 
   return 0;
 }
@@ -240,11 +235,11 @@ int generate_path(char terrain[MAP_Y_HEIGHT][MAP_X_WIDTH], struct cord start,
 int main(int argc, char *argv[]) {
   srand(time(NULL));
 
-  char terrain[MAP_Y_HEIGHT][MAP_X_WIDTH];
+  char terrain[MAP_X_WIDTH][MAP_Y_HEIGHT];
 
-  for (int y = 0; y < MAP_Y_HEIGHT; y++) {
-    for (int x = 0; x < MAP_X_WIDTH; x++) {
-      terrain[y][x] = EMPTY;
+  for (int x = 0; x < MAP_X_WIDTH; x++) {
+    for (int y = 0; y < MAP_Y_HEIGHT; y++) {
+      terrain[x][y] = EMPTY;
     }
   }
 
@@ -277,8 +272,8 @@ int main(int argc, char *argv[]) {
   struct cord west_exit = (struct cord){0, rand() % (MAP_Y_HEIGHT - 2) + 1};
   struct cord east_exit =
       (struct cord){MAP_X_WIDTH - 1, rand() % (MAP_Y_HEIGHT - 2) + 1};
-  terrain[west_exit.y][west_exit.x] = ROAD;
-  terrain[east_exit.y][east_exit.x] = ROAD;
+  terrain[west_exit.x][west_exit.y] = ROAD;
+  terrain[east_exit.x][east_exit.y] = ROAD;
   // Roads are not allowed on the sides, except for the exits. Thus those are
   // manually placed.
   generate_path(terrain, (struct cord){west_exit.x + 1, west_exit.y},
@@ -287,8 +282,8 @@ int main(int argc, char *argv[]) {
   struct cord north_exit = (struct cord){rand() % (MAP_X_WIDTH - 2) + 1, 0};
   struct cord south_exit =
       (struct cord){rand() % (MAP_X_WIDTH - 2) + 1, MAP_Y_HEIGHT - 1};
-  terrain[north_exit.y][north_exit.x] = ROAD;
-  terrain[south_exit.y][south_exit.x] = ROAD;
+  terrain[north_exit.x][north_exit.y] = ROAD;
+  terrain[south_exit.x][south_exit.y] = ROAD;
   // Roads are not allowed on the sides, except for the exits. Thus those are
   // manually placed.
   generate_path(terrain, (struct cord){north_exit.x, north_exit.y + 1},
