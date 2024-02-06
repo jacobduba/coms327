@@ -17,9 +17,10 @@ int main(int argc, char *argv[]) {
   }
 
   stack_top(&s, &i);
-  printf("%d %d\n", stack_size(&s), i);
+  printf("Stack size: %d, i currently: %d\n", stack_size(&s), i);
 
   while (!stack_is_empty(&s)) {
+
     if (stack_pop(&s, &i)) {
       // Runtime opens 3 files before starting main, stdin, stdout, stderr
       fprintf(stderr, "Attempt to pop empty stack\n");
@@ -27,12 +28,10 @@ int main(int argc, char *argv[]) {
       return 1;
     }
 
-    printf("Popped %d\n", stack_pop(&s, &i));
-
-    stack_destroy(&s);
-
-    printf("%d\n", i);
+    printf("Popped %d\n", i);
   }
+
+  stack_destroy(&s);
 
   return 0;
 }

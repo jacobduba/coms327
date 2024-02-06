@@ -131,8 +131,6 @@ int get_terrain_cost(char type) {
     return 80;
   case TREE:
     return 25;
-  case ROAD:
-    return 0;
   default:
     return 100;
   }

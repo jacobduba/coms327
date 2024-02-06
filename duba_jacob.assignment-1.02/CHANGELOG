@@ -1,0 +1,100 @@
+commit ea0b2b4c427f0b8cccd22cf34d5084951d691a24
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Wed Jan 31 22:49:56 2024 -0600
+
+    Getting ready for submission!
+
+commit 8694737417f28000e400210d640f63574ea34cc9
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Wed Jan 31 22:38:59 2024 -0600
+
+    Attempt at road generation
+
+commit 770a50d2a8916451a257d48da3f79c339ac663b7
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Wed Jan 31 13:40:00 2024 -0600
+
+    Place buildings
+
+commit 13209c041aca5f3d223b8b10aa6ba0408db88fed
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Tue Jan 30 16:49:33 2024 -0600
+
+    Class 1/30
+
+commit 35f72e4fd3b3d6930618fc0b2b57aab2d2570f35
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Mon Jan 29 17:52:50 2024 -0600
+
+    Path generation
+
+commit f4dbfbb90ca8095e51be3948775825b071b552fb
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Mon Jan 29 16:47:17 2024 -0600
+
+    Refactored to make cords more generic
+
+commit 4f28c2c040117a9148e10bf03c619607dbb78cf8
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Mon Jan 29 15:39:18 2024 -0600
+
+    Working seed generation
+    Got it working!
+
+commit 8731632d92336edcc56b80925a97c7184b1e022a
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Mon Jan 29 10:19:56 2024 -0600
+
+    I attempted seeding - giving up.
+    
+    Seeding would require BFS which uses a queue. C doesn't have built-in support for queues?
+    Then laying the path would use Dijkstra's, which uses a heap. C doesn't support that either.
+
+commit 7b02e2a0e41bf8e41fe1e503bbb9ad46ad67a6be
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Sat Jan 27 20:31:14 2024 -0600
+
+    Changed the assignment folder names.
+    My assignment folder names were not how they should
+    be submitted.
+
+commit 510dfa889856d7792eacf502fa88460435dbd3fe
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Fri Jan 26 17:14:25 2024 -0600
+
+    Print out the terrain, misc.
+    
+    This commit prints out the terrain.
+    The terrain is populated with random terrain types.
+    
+    Also this commit sets up the Makefile
+
+commit 12215e140cb3ba994aaf082b2efd1b78e72a0e17
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Fri Jan 26 15:47:18 2024 -0600
+
+    Gitignore updates
+
+commit 4b025847b18790883280d715568984912d967aef
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Thu Jan 25 13:53:21 2024 -0600
+
+    Class Jan 25
+
+commit 8c2de4d37e2718f7b087113f7b5e3e1714e4f422
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Tue Jan 23 13:27:40 2024 -0600
+
+    Tarballs + Updated Changelog
+
+commit 0246c5cfa0df52cc4f4943113ad64d8510eff391
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Tue Jan 16 13:51:37 2024 -0600
+
+    Use version control.
+
+commit 33323c229fa57da201d0b1570b0eded4cfb550e8
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Fri Jan 12 17:15:32 2024 -0600
+
+    Commit
