@@ -18,6 +18,8 @@
 #define POKEMON_CENTER 'C'
 #define POKEMART 'M'
 
+#define MAX_ATTEMPTS_TO_PLACE_BUILDING 1000
+
 struct cord {
   int x;
   int y;
@@ -59,10 +61,32 @@ int try_place_building(char terrain[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT],
   cord_t c = {rand() % (CHUNK_X_WIDTH - 3) + 1,
               rand() % (CHUNK_Y_HEIGHT - 3) + 1};
 
-  if (terrain[c.x][c.y] == ROAD || terrain[c.x][c.y] == WATER ||
-      terrain[c.x + 1][c.y] == ROAD || terrain[c.x][c.y] == WATER ||
-      terrain[c.x][c.y + 1] == ROAD || terrain[c.x][c.y + 1] == WATER ||
-      terrain[c.x + 1][c.y + 1] == ROAD || terrain[c.x + 1][c.y + 1] == WATER) {
+  // Buildings have 4 (b)uilding tiles b1, b2, b3, b4 layed out like
+  // b1  b2
+  // b3  b4
+
+  char *b1 = &terrain[c.x][c.y];
+  char *b2 = &terrain[c.x + 1][c.y];
+  char *b3 = &terrain[c.x][c.y + 1];
+  char *b4 = &terrain[c.x + 1][c.y + 1];
+
+  if (*b1 != TREE && *b1 != BOULDER && *b1 != TALL_GRASS &&
+      *b1 != SHORT_GRASS) {
+    return 1;
+  }
+
+  if (*b2 != TREE && *b2 != BOULDER && *b2 != TALL_GRASS &&
+      *b2 != SHORT_GRASS) {
+    return 1;
+  }
+
+  if (*b3 != TREE && *b3 != BOULDER && *b3 != TALL_GRASS &&
+      *b3 != SHORT_GRASS) {
+    return 1;
+  }
+
+  if (*b4 != TREE && *b4 != BOULDER && *b4 != TALL_GRASS &&
+      *b4 != SHORT_GRASS) {
     return 1;
   }
 
@@ -73,10 +97,10 @@ int try_place_building(char terrain[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT],
     return 1;
   }
 
-  terrain[c.x][c.y] = building;
-  terrain[c.x + 1][c.y] = building;
-  terrain[c.x][c.y + 1] = building;
-  terrain[c.x + 1][c.y + 1] = building;
+  *b1 = building;
+  *b2 = building;
+  *b3 = building;
+  *b4 = building;
 
   return 0;
 }
@@ -356,7 +380,7 @@ int generate_paths(chunk_t *chunk, int n_gate_x, int s_gate_x, int w_gate_y,
   } else if (!n_gate_exists && s_gate_exists && w_gate_exists &&
              !e_gate_exists) {
     chunk->terrain[s_gate_x][CHUNK_Y_HEIGHT - 1] = ROAD;
-    chunk->terrain[CHUNK_X_WIDTH - 1][e_gate_y] = ROAD;
+    chunk->terrain[0][w_gate_y] = ROAD;
     gen_path_from_cords(chunk->terrain, (cord_t){s_gate_x, CHUNK_Y_HEIGHT - 2},
                         (cord_t){1, w_gate_y});
   } else if (!n_gate_exists && s_gate_exists && !w_gate_exists &&
@@ -379,9 +403,10 @@ int generate_paths(chunk_t *chunk, int n_gate_x, int s_gate_x, int w_gate_y,
 int generate_chunk(chunk_t *chunk, int n_gate_x, int s_gate_x, int w_gate_y,
                    int e_gate_y) {
   cord_t generation_queue[CHUNK_X_WIDTH * CHUNK_Y_HEIGHT];
-  int pokemart_not_placed;
   int head, tail;
   int pokemon_center_not_placed;
+  int pokemart_not_placed;
+  int attempts_place;
 
   for (int x = 0; x < CHUNK_X_WIDTH; x++) {
     for (int y = 0; y < CHUNK_Y_HEIGHT; y++) {
@@ -419,16 +444,19 @@ int generate_chunk(chunk_t *chunk, int n_gate_x, int s_gate_x, int w_gate_y,
 
   generate_paths(chunk, n_gate_x, s_gate_x, w_gate_y, e_gate_y);
 
+  attempts_place = 0;
   pokemon_center_not_placed = 1;
   do {
     pokemon_center_not_placed =
         try_place_building(chunk->terrain, POKEMON_CENTER);
-  } while (pokemon_center_not_placed);
+  } while (pokemon_center_not_placed &&
+           attempts_place++ < MAX_ATTEMPTS_TO_PLACE_BUILDING);
 
   pokemart_not_placed = 1;
   do {
     pokemart_not_placed = try_place_building(chunk->terrain, POKEMART);
-  } while (pokemart_not_placed);
+  } while (pokemart_not_placed &&
+           attempts_place++ < MAX_ATTEMPTS_TO_PLACE_BUILDING);
 
   return 0;
 }
@@ -438,7 +466,7 @@ int main(int argc, char *argv[]) {
 
   srand(time(NULL));
 
-  generate_chunk(&test1, 78, -1, -1, 10);
+  generate_chunk(&test1, -1, 40, 10, -1);
 
   print_terrain(test1.terrain);
 }
