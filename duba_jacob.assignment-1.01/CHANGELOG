@@ -1,3 +1,70 @@
+commit 5aad706fed15644052767bf17260c25aec70be83
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Wed Feb 7 22:41:00 2024 -0600
+
+    Place buildings based on distance from the center
+
+commit 1fe93363b50f4aed9c3e9ffc21d1ba9178da42bb
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Wed Feb 7 22:06:15 2024 -0600
+
+    Added commands and movement.
+
+commit eda7456ca7e1315ffc11686f885e441a21b4357f
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Wed Feb 7 19:06:19 2024 -0600
+
+    Buildings no longer overlap + prevent infinite loop
+    So buildings could overlap. So the center could be covered by the pokemart.
+    The solution for this was to turn a placement blacklist into a placement whitelist (eg. now buildings must be placed om one of the (5?) land types.
+    
+    The generator also does not infinite loop if there is not suitable place, like it's all water.
+
+commit 5385c22757bd1ce6f4c47e44e9baf6434543a8e6
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Wed Feb 7 11:07:09 2024 -0600
+
+    This commit allows you to place gates at certain coordinates.
+    
+    If the gate's coordinate is invalid, the gate will not be created.
+    A path will not connect to that gate anymore.
+
+commit a1202233e0238813397a841f2f485c574a5bc411
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Tue Feb 6 13:53:01 2024 -0600
+
+    Week 4
+
+commit 6827a876908af16da3d275932121d7d76770d38e
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Mon Feb 5 13:37:22 2024 -0600
+
+    Refactor 2D arrays to as [x][y] instead of [y][x]
+    I store coordinates as (x, y).
+    I just fixed a bug where I wrote [x][y] instead of [y][x] in 2d arrays.
+    So it became clear that coordinates should all follow the same convention.
+    So I choose the most popular convention (x, y).
+
+commit ddef2ee71f25c9bafc45a3915ac7769f3f05f0ac
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Mon Feb 5 13:00:10 2024 -0600
+
+    Got Dijkstra's working!
+    
+    This is really funny, I had my x and ys mixed up on the loop that initialized the visited 2D array.
+
+commit 4c04895c56193aa1dec089a3c83d2704516f7312
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Thu Feb 1 12:54:28 2024 -0600
+
+    Sheaffer's code
+
+commit 60799e496784b179217e548d405feaefe37e7048
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Thu Feb 1 10:11:19 2024 -0600
+
+    Changes to improve submission
+
 commit ea0b2b4c427f0b8cccd22cf34d5084951d691a24
 Author: Jacob Duba <jacob@mooshoe.me>
 Date:   Wed Jan 31 22:49:56 2024 -0600

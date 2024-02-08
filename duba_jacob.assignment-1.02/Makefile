@@ -1,8 +1,7 @@
-all: generate
+all: poke327
 
-generate: generate.c
-	gcc sc_heap.c generate.c -g3 -o generate.out
-	# gcc generate.c -g3 -o generate.out
+poke327: sc_heap.c sc_heap.h poke327.c
+	gcc sc_heap.c poke327.c -g3 -o poke327.out
 
 clean:
-	rm generate.out
+	rm poke327.out

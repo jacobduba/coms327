@@ -1,6 +1,6 @@
-Programming Project 1.01 (Terrain Generation) by Jacob Duba <jduba@iastate.edu>
+Programming Project 1.02 (Moving from Map to Map) by Jacob Duba <jduba@iastate.edu>
 
-Note: sc_heap.c exists because I attempted to create the paths via Dijkstra's.
+Note: sc_heap.c is a heap I found on Github.
 
 Building
 ========
@@ -10,7 +10,7 @@ $ make
 Running
 =======
 
-$ ./generate.out
+$ ./poke327.out
 
 Clean
 =====
