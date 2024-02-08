@@ -5,6 +5,8 @@
 #include <stdlib.h>
 #include <time.h>
 
+#define WORLD_SIZE 401
+
 #define CHUNK_X_WIDTH 80
 #define CHUNK_Y_HEIGHT 21
 
@@ -296,13 +298,14 @@ int generate_paths(chunk_t *chunk, int n_gate_x, int s_gate_x, int w_gate_y,
   cord_t random_road_tile;
   int n_gate_exists, s_gate_exists, w_gate_exists, e_gate_exists;
 
-  // If the pathfinder could explore the edges of the chunk, it could draw a
-  // path through there. Thus, gates cannot start in the corners since in order
-  // to be connected the path would have to go through the edges.
   n_gate_exists = 0 < n_gate_x && n_gate_x < CHUNK_X_WIDTH - 1;
   s_gate_exists = 0 < s_gate_x && s_gate_x < CHUNK_X_WIDTH - 1;
   w_gate_exists = 0 < w_gate_y && w_gate_y < CHUNK_Y_HEIGHT - 1;
   e_gate_exists = 0 < e_gate_y && e_gate_y < CHUNK_Y_HEIGHT - 1;
+
+  // If the pathfinder could explore the edges of the chunk, it could draw a
+  // path through there. Thus, gates cannot start in the corners since in order
+  // to be connected the path would have to go through the edges.
 
   if (n_gate_exists && s_gate_exists && w_gate_exists && e_gate_exists) {
     chunk->terrain[n_gate_x][0] = ROAD;
@@ -366,7 +369,7 @@ int generate_paths(chunk_t *chunk, int n_gate_x, int s_gate_x, int w_gate_y,
   } else if (n_gate_exists && !s_gate_exists && w_gate_exists &&
              !e_gate_exists) {
     chunk->terrain[n_gate_x][0] = ROAD;
-    chunk->terrain[CHUNK_X_WIDTH - 1][e_gate_y] = ROAD;
+    chunk->terrain[0][w_gate_y] = ROAD;
 
     gen_path_from_cords(chunk->terrain, (cord_t){n_gate_x, 1},
                         (cord_t){1, w_gate_y});
@@ -401,18 +404,23 @@ int generate_paths(chunk_t *chunk, int n_gate_x, int s_gate_x, int w_gate_y,
  * - 2]. If not, paths will not be drawn to that exist
  */
 int generate_chunk(chunk_t *chunk, int n_gate_x, int s_gate_x, int w_gate_y,
-                   int e_gate_y) {
+                   int e_gate_y, int place_pokemon_center, int place_pokemart) {
   cord_t generation_queue[CHUNK_X_WIDTH * CHUNK_Y_HEIGHT];
   int head, tail;
   int pokemon_center_not_placed;
   int pokemart_not_placed;
-  int attempts_place;
+  int attempts_placed;
 
   for (int x = 0; x < CHUNK_X_WIDTH; x++) {
     for (int y = 0; y < CHUNK_Y_HEIGHT; y++) {
       chunk->terrain[x][y] = EMPTY;
     }
   }
+
+  chunk->n_gate_x = n_gate_x;
+  chunk->s_gate_x = s_gate_x;
+  chunk->w_gate_y = w_gate_y;
+  chunk->e_gate_y = e_gate_y;
 
   head = 0, tail = 0;
 
@@ -444,29 +452,143 @@ int generate_chunk(chunk_t *chunk, int n_gate_x, int s_gate_x, int w_gate_y,
 
   generate_paths(chunk, n_gate_x, s_gate_x, w_gate_y, e_gate_y);
 
-  attempts_place = 0;
-  pokemon_center_not_placed = 1;
-  do {
-    pokemon_center_not_placed =
-        try_place_building(chunk->terrain, POKEMON_CENTER);
-  } while (pokemon_center_not_placed &&
-           attempts_place++ < MAX_ATTEMPTS_TO_PLACE_BUILDING);
+  if (place_pokemon_center) {
+    attempts_placed = 0;
+    pokemon_center_not_placed = 1;
+    do {
+      pokemon_center_not_placed =
+          try_place_building(chunk->terrain, POKEMON_CENTER);
+    } while (pokemon_center_not_placed &&
+             attempts_placed++ < MAX_ATTEMPTS_TO_PLACE_BUILDING);
+  }
 
-  pokemart_not_placed = 1;
-  do {
-    pokemart_not_placed = try_place_building(chunk->terrain, POKEMART);
-  } while (pokemart_not_placed &&
-           attempts_place++ < MAX_ATTEMPTS_TO_PLACE_BUILDING);
+  if (place_pokemart) {
+    attempts_placed = 0;
+    pokemart_not_placed = 1;
+    do {
+      pokemart_not_placed = try_place_building(chunk->terrain, POKEMART);
+    } while (pokemart_not_placed &&
+             attempts_placed++ < MAX_ATTEMPTS_TO_PLACE_BUILDING);
+  }
 
   return 0;
 }
 
 int main(int argc, char *argv[]) {
-  chunk_t test1;
+  chunk_t *world[WORLD_SIZE][WORLD_SIZE];
+  cord_t cur_chunk;
+  char *command;
+  size_t size_of_commands;
+  int fly_input_x, fly_input_y;
+  int n_gate_x, s_gate_x, w_gate_y, e_gate_y;
 
   srand(time(NULL));
 
-  generate_chunk(&test1, -1, 40, 10, -1);
+  for (int x = 0; x < WORLD_SIZE; x++) {
+    for (int y = 0; y < WORLD_SIZE; y++) {
+      world[x][y] = NULL;
+    }
+  }
 
-  print_terrain(test1.terrain);
+  cur_chunk.x = 200;
+  cur_chunk.y = 200;
+
+  for (;;) {
+    // TODO get rid of this spagetti code
+    if (!world[cur_chunk.x][cur_chunk.y]) {
+      // TODO especially this (TERRIBLE)
+      if (cur_chunk.x > 0) {
+        if (world[cur_chunk.x - 1][cur_chunk.y]) {
+          w_gate_y = world[cur_chunk.x - 1][cur_chunk.y]->e_gate_y;
+        } else {
+          w_gate_y = rand() % (CHUNK_Y_HEIGHT - 2) + 1;
+        }
+      } else {
+        w_gate_y = -1;
+      }
+
+      if (cur_chunk.x < WORLD_SIZE - 1) {
+        if (world[cur_chunk.x + 1][cur_chunk.y]) {
+          e_gate_y = world[cur_chunk.x + 1][cur_chunk.y]->w_gate_y;
+        } else {
+          e_gate_y = rand() % (CHUNK_Y_HEIGHT - 2) + 1;
+        }
+      } else {
+        e_gate_y = -1;
+      }
+
+      if (cur_chunk.y > 0) {
+        if (world[cur_chunk.x][cur_chunk.y - 1]) {
+          n_gate_x = world[cur_chunk.x][cur_chunk.y - 1]->s_gate_x;
+        } else {
+          n_gate_x = rand() % (CHUNK_X_WIDTH - 2) + 1;
+        }
+      } else {
+        n_gate_x = -1;
+      }
+
+      if (cur_chunk.y < WORLD_SIZE - 1) {
+        if (world[cur_chunk.x][cur_chunk.y + 1]) {
+          s_gate_x = world[cur_chunk.x][cur_chunk.y + 1]->n_gate_x;
+        } else {
+          s_gate_x = rand() % (CHUNK_X_WIDTH - 2) + 1;
+        }
+      } else {
+        s_gate_x = -1;
+      }
+
+      chunk_t *chunk = malloc(sizeof(chunk_t));
+      world[cur_chunk.x][cur_chunk.y] = chunk;
+      generate_chunk(chunk, n_gate_x, s_gate_x, w_gate_y, e_gate_y, 1, 1);
+    }
+
+    print_terrain(world[cur_chunk.x][cur_chunk.y]->terrain);
+
+    printf("(%d,%d) | Enter command: ", cur_chunk.x - WORLD_SIZE / 2,
+           cur_chunk.y - WORLD_SIZE / 2);
+
+    getline(&command, &size_of_commands, stdin);
+
+    // TODO error handling for out of bounds
+    switch (command[0]) {
+    case 'n':
+      cur_chunk.y--;
+      break;
+    case 's':
+      cur_chunk.y++;
+      break;
+    case 'w':
+      cur_chunk.x--;
+      break;
+    case 'e':
+      cur_chunk.x++;
+      break;
+    case 'q':
+      return 0;
+    case 'f':
+      if (sscanf(command, "f %d %d", &fly_input_x, &fly_input_y) != 2) {
+        printf("Error: Fly input should be formated like 'f x y'.\n");
+        break;
+      }
+
+      if (fly_input_x < WORLD_SIZE / -2 || WORLD_SIZE / 2 < fly_input_x) {
+        printf("Error: x input out of bounds.\n");
+        break;
+      }
+
+      if (fly_input_y < WORLD_SIZE / -2 || WORLD_SIZE / 2 < fly_input_y) {
+        printf("Error: y input out of bounds.\n");
+        break;
+      }
+
+      cur_chunk.x = fly_input_x + WORLD_SIZE / 2;
+      cur_chunk.y = fly_input_y + WORLD_SIZE / 2;
+      break;
+    default:
+      printf("Error: Command '%c' not found.\n", command[0]);
+      break;
+    }
+
+    printf("\n");
+  }
 }
