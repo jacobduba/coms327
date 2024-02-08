@@ -481,6 +481,9 @@ int main(int argc, char *argv[]) {
   size_t size_of_commands;
   int fly_input_x, fly_input_y;
   int n_gate_x, s_gate_x, w_gate_y, e_gate_y;
+  int place_poke_center, place_pokemart;
+  int place_building_prob;
+  int manhatten_dist;
 
   srand(time(NULL));
 
@@ -537,9 +540,26 @@ int main(int argc, char *argv[]) {
         s_gate_x = -1;
       }
 
+      manhatten_dist =
+          abs(cur_chunk.x - WORLD_SIZE / 2) + abs(cur_chunk.y - WORLD_SIZE / 2);
+      if (manhatten_dist < 200) {
+        place_building_prob = (float)-45 * manhatten_dist / 200 + 50;
+      } else {
+        place_building_prob = 5;
+      }
+
+      place_poke_center = rand() % 100 <= place_building_prob;
+      place_pokemart = rand() % 100 <= place_building_prob;
+
+      if (cur_chunk.x == 200 && cur_chunk.y == 200) {
+        place_poke_center = 1;
+        place_pokemart = 1;
+      }
+
       chunk_t *chunk = malloc(sizeof(chunk_t));
       world[cur_chunk.x][cur_chunk.y] = chunk;
-      generate_chunk(chunk, n_gate_x, s_gate_x, w_gate_y, e_gate_y, 1, 1);
+      generate_chunk(chunk, n_gate_x, s_gate_x, w_gate_y, e_gate_y,
+                     place_poke_center, place_pokemart);
     }
 
     print_terrain(world[cur_chunk.x][cur_chunk.y]->terrain);
@@ -552,15 +572,27 @@ int main(int argc, char *argv[]) {
     // TODO error handling for out of bounds
     switch (command[0]) {
     case 'n':
+      if (cur_chunk.y == 0) {
+        break;
+      }
       cur_chunk.y--;
       break;
     case 's':
+      if (cur_chunk.y == WORLD_SIZE - 1) {
+        break;
+      }
       cur_chunk.y++;
       break;
     case 'w':
+      if (cur_chunk.x == 0) {
+        break;
+      }
       cur_chunk.x--;
       break;
     case 'e':
+      if (cur_chunk.x == WORLD_SIZE - 1) {
+        break;
+      }
       cur_chunk.x++;
       break;
     case 'q':
