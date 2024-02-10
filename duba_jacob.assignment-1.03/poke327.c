@@ -11,7 +11,7 @@
 #define CHUNK_Y_HEIGHT 21
 
 // Out of 100
-#define TERRAIN_NOISE 80
+#define TERRAIN_NOISE 70
 
 #define EMPTY 'E'
 #define BOULDER '%'
@@ -112,34 +112,46 @@ int try_place_building(char terrain[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT],
 
 int bfs_explore_generation(
     char terrain[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT],
-    cord_t generation_queue[CHUNK_X_WIDTH * CHUNK_Y_HEIGHT], int *head,
+    cord_t generation_queue[CHUNK_X_WIDTH * CHUNK_Y_HEIGHT * 2], int *head,
     int *tail) {
 
   while (*head - *tail > 0) {
     cord_t cur = generation_queue[(*tail)++];
 
-    if (cur.x > 0 && terrain[cur.x - 1][cur.y] == EMPTY &&
-        rand() % 100 < TERRAIN_NOISE) {
-      terrain[cur.x - 1][cur.y] = terrain[cur.x][cur.y];
-      generation_queue[(*head)++] = (cord_t){cur.x - 1, cur.y};
+    if (cur.x > 0 && terrain[cur.x - 1][cur.y] == EMPTY) {
+      if (rand() % 100 < TERRAIN_NOISE) {
+        terrain[cur.x - 1][cur.y] = terrain[cur.x][cur.y];
+        generation_queue[(*head)++] = (cord_t){cur.x - 1, cur.y};
+      } else {
+        generation_queue[(*head)++] = (cord_t){cur.x, cur.y};
+      }
     }
 
-    if (cur.x < CHUNK_X_WIDTH - 1 && terrain[cur.x + 1][cur.y] == EMPTY &&
-        rand() % 100 < TERRAIN_NOISE) {
-      terrain[cur.x + 1][cur.y] = terrain[cur.x][cur.y];
-      generation_queue[(*head)++] = (cord_t){cur.x + 1, cur.y};
+    if (cur.x < CHUNK_X_WIDTH - 1 && terrain[cur.x + 1][cur.y] == EMPTY) {
+      if (rand() % 100 < TERRAIN_NOISE) {
+        terrain[cur.x + 1][cur.y] = terrain[cur.x][cur.y];
+        generation_queue[(*head)++] = (cord_t){cur.x + 1, cur.y};
+      } else {
+        generation_queue[(*head)++] = (cord_t){cur.x, cur.y};
+      }
     }
 
-    if (cur.y > 0 && terrain[cur.x][cur.y - 1] == EMPTY &&
-        rand() % 100 < TERRAIN_NOISE) {
-      terrain[cur.x][cur.y - 1] = terrain[cur.x][cur.y];
-      generation_queue[(*head)++] = (cord_t){cur.x, cur.y - 1};
+    if (cur.y > 0 && terrain[cur.x][cur.y - 1] == EMPTY) {
+      if (rand() % 100 < TERRAIN_NOISE) {
+        terrain[cur.x][cur.y - 1] = terrain[cur.x][cur.y];
+        generation_queue[(*head)++] = (cord_t){cur.x, cur.y - 1};
+      } else {
+        generation_queue[(*head)++] = (cord_t){cur.x, cur.y};
+      }
     }
 
-    if (cur.y < CHUNK_Y_HEIGHT - 1 && terrain[cur.x][cur.y + 1] == EMPTY &&
-        rand() % 100 < TERRAIN_NOISE) {
-      terrain[cur.x][cur.y + 1] = terrain[cur.x][cur.y];
-      generation_queue[(*head)++] = (cord_t){cur.x, cur.y + 1};
+    if (cur.y < CHUNK_Y_HEIGHT - 1 && terrain[cur.x][cur.y + 1] == EMPTY) {
+      if (rand() % 100 < TERRAIN_NOISE) {
+        terrain[cur.x][cur.y + 1] = terrain[cur.x][cur.y];
+        generation_queue[(*head)++] = (cord_t){cur.x, cur.y + 1};
+      } else {
+        generation_queue[(*head)++] = (cord_t){cur.x, cur.y};
+      }
     }
   }
 
@@ -412,7 +424,7 @@ int generate_paths(chunk_t *chunk, int n_gate_x, int s_gate_x, int w_gate_y,
  */
 int generate_chunk(chunk_t *chunk, int n_gate_x, int s_gate_x, int w_gate_y,
                    int e_gate_y, int place_pokemon_center, int place_pokemart) {
-  cord_t generation_queue[CHUNK_X_WIDTH * CHUNK_Y_HEIGHT];
+  cord_t generation_queue[CHUNK_X_WIDTH * CHUNK_Y_HEIGHT * 2];
   int head, tail;
   int pokemon_center_not_placed;
   int pokemart_not_placed;
