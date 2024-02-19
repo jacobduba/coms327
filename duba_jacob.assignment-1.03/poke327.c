@@ -13,16 +13,6 @@
 // Out of 100
 #define TERRAIN_NOISE 70
 
-#define EMPTY 'E'
-#define BOULDER '%'
-#define TREE '^'
-#define TALL_GRASS ':'
-#define SHORT_GRASS '.'
-#define WATER '~'
-#define ROAD '#'
-#define POKEMON_CENTER 'C'
-#define POKEMART 'M'
-
 #define MAX_ATTEMPTS_TO_PLACE_BUILDING 1000
 
 struct cord {
@@ -30,26 +20,59 @@ struct cord {
         int y;
 } typedef cord_t;
 
-struct chunk {
-        char terrain[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT];
-        int n_gate_x, s_gate_x, e_gate_y, w_gate_y;
-} typedef chunk_t;
+typedef enum terrain {
+        EMPTY,
+        BOULDER,
+        TREE,
+        TALL_GRASS,
+        SHORT_GRASS,
+        WATER,
+        ROAD,
+        POKEMON_CENTER,
+        POKEMART
+} land_t;
 
 typedef enum direction { NORTH, SOUTH, EAST, WEST } dir_t;
 
-// typedef enum terrain { EMPTY, BOULDER } terrain;
+struct chunk {
+        land_t terrain[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT];
+        int n_gate_x, s_gate_x, e_gate_y, w_gate_y;
+} typedef chunk_t;
 
-void print_terrain(char terrain[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT]) {
+char get_land_char(land_t land) {
+        switch (land) {
+        case EMPTY:
+                return 'E';
+        case BOULDER:
+                return '%';
+        case TREE:
+                return '^';
+        case TALL_GRASS:
+                return ':';
+        case SHORT_GRASS:
+                return '.';
+        case WATER:
+                return '~';
+        case ROAD:
+                return '#';
+        case POKEMON_CENTER:
+                return 'C';
+        case POKEMART:
+                return 'M';
+        }
+}
+
+void print_terrain(land_t terrain[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT]) {
         for (int y = 0; y < CHUNK_Y_HEIGHT; y++) {
                 for (int x = 0; x < CHUNK_X_WIDTH; x++) {
-                        printf("%c", terrain[x][y]);
+                        printf("%c", get_land_char(terrain[x][y]));
                 }
                 printf("\n");
         }
 }
 
 void place_seed_in_gen_queue(
-    char terrain[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT], int *head,
+    land_t terrain[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT], int *head,
     cord_t generation_queue[CHUNK_X_WIDTH * CHUNK_Y_HEIGHT], int x, int y,
     char type) {
 
@@ -66,7 +89,7 @@ void place_seed_in_gen_queue(
 /*
  * Returns 1 if the pokemart has not been placed
  */
-int try_place_building(char terrain[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT],
+int try_place_building(land_t terrain[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT],
                        char building) {
         cord_t c = {rand() % (CHUNK_X_WIDTH - 3) + 1,
                     rand() % (CHUNK_Y_HEIGHT - 3) + 1};
@@ -75,10 +98,10 @@ int try_place_building(char terrain[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT],
         // b1  b2
         // b3  b4
 
-        char *b1 = &terrain[c.x][c.y];
-        char *b2 = &terrain[c.x + 1][c.y];
-        char *b3 = &terrain[c.x][c.y + 1];
-        char *b4 = &terrain[c.x + 1][c.y + 1];
+        land_t *b1 = &terrain[c.x][c.y];
+        land_t *b2 = &terrain[c.x + 1][c.y];
+        land_t *b3 = &terrain[c.x][c.y + 1];
+        land_t *b4 = &terrain[c.x + 1][c.y + 1];
 
         if (*b1 != TREE && *b1 != BOULDER && *b1 != TALL_GRASS &&
             *b1 != SHORT_GRASS) {
@@ -118,7 +141,7 @@ int try_place_building(char terrain[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT],
 }
 
 int bfs_explore_generation(
-    char terrain[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT],
+    land_t terrain[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT],
     cord_t generation_queue[CHUNK_X_WIDTH * CHUNK_Y_HEIGHT * 2], int *head,
     int *tail) {
 
@@ -180,7 +203,7 @@ int bfs_explore_generation(
         return 0;
 }
 
-int place_boulders(char terrain[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT]) {
+int place_boulders(land_t terrain[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT]) {
         for (int x = 0; x < CHUNK_X_WIDTH; x++) {
                 for (int y = 0; y < CHUNK_Y_HEIGHT; y++) {
                         if (x == 0 || y == 0 || x == CHUNK_X_WIDTH - 1 ||
@@ -212,12 +235,12 @@ int get_terrain_cost(char type) {
         }
 }
 
-void generate_path_explore_neighbor(char terrain[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT],
-                                    int dist[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT],
-                                    bool visited[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT],
-                                    cord_t prev[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT],
-                                    cord_t new_c, cord_t old_c, int d,
-                                    struct sc_heap *heap) {
+void generate_path_explore_neighbor(
+    land_t terrain[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT],
+    int dist[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT],
+    bool visited[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT],
+    cord_t prev[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT], cord_t new_c, cord_t old_c,
+    int d, struct sc_heap *heap) {
         if (1 > new_c.x || new_c.x >= CHUNK_X_WIDTH - 1 || 1 > new_c.y ||
             new_c.y >= CHUNK_Y_HEIGHT - 1) {
                 return;
@@ -242,7 +265,7 @@ void generate_path_explore_neighbor(char terrain[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT],
         }
 }
 
-int gen_path_from_cords(char terrain[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT],
+int gen_path_from_cords(land_t terrain[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT],
                         cord_t start, cord_t end) {
         int dist[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT];
 
@@ -306,7 +329,7 @@ int gen_path_from_cords(char terrain[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT],
         return 0;
 }
 
-int find_random_road(char terrain[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT],
+int find_random_road(land_t terrain[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT],
                      cord_t *cord) {
         int random_road_not_found;
         int x, y;
