@@ -592,6 +592,8 @@ int create_chunk_if_not_exists(chunk_t *world[WORLD_SIZE][WORLD_SIZE],
 
         world[cur_chunk.x][cur_chunk.y] = chunk;
         generate_terrain(chunk, place_poke_center, place_pokemart);
+
+        return 0;
 }
 
 int main(int argc, char *argv[]) {
