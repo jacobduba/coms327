@@ -37,6 +37,8 @@ struct chunk {
 
 typedef enum direction { NORTH, SOUTH, EAST, WEST } dir_t;
 
+// typedef enum terrain { EMPTY, BOULDER } terrain;
+
 void print_terrain(char terrain[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT]) {
         for (int y = 0; y < CHUNK_Y_HEIGHT; y++) {
                 for (int x = 0; x < CHUNK_X_WIDTH; x++) {
@@ -615,73 +617,77 @@ int main(int argc, char *argv[]) {
         cur_chunk.x = 200;
         cur_chunk.y = 200;
 
-        for (;;) {
-                create_chunk_if_not_exists(world, cur_chunk);
+        create_chunk_if_not_exists(world, cur_chunk);
 
-                print_terrain(world[cur_chunk.x][cur_chunk.y]->terrain);
+        print_terrain(world[cur_chunk.x][cur_chunk.y]->terrain);
 
-                printf(
-                    "(%d,%d) | Enter command: ", cur_chunk.x - WORLD_SIZE / 2,
-                    cur_chunk.y - WORLD_SIZE / 2);
+        // for (;;) {
+        //         create_chunk_if_not_exists(world, cur_chunk);
 
-                getline(&command, &size_of_commands, stdin);
+        //         print_terrain(world[cur_chunk.x][cur_chunk.y]->terrain);
 
-                switch (command[0]) {
-                case 'n':
-                        if (cur_chunk.y == 0) {
-                                break;
-                        }
-                        cur_chunk.y--;
-                        break;
-                case 's':
-                        if (cur_chunk.y == WORLD_SIZE - 1) {
-                                break;
-                        }
-                        cur_chunk.y++;
-                        break;
-                case 'w':
-                        if (cur_chunk.x == 0) {
-                                break;
-                        }
-                        cur_chunk.x--;
-                        break;
-                case 'e':
-                        if (cur_chunk.x == WORLD_SIZE - 1) {
-                                break;
-                        }
-                        cur_chunk.x++;
-                        break;
-                case 'q':
-                        return 0;
-                case 'f':
-                        if (sscanf(command, "f %d %d", &fly_input_x,
-                                   &fly_input_y) != 2) {
-                                printf("Error: Fly input should be "
-                                       "formated "
-                                       "like 'f x y'.\n");
-                                break;
-                        }
+        //         printf(
+        //             "(%d,%d) | Enter command: ", cur_chunk.x - WORLD_SIZE /
+        //             2, cur_chunk.y - WORLD_SIZE / 2);
 
-                        if (fly_input_x < WORLD_SIZE / -2 ||
-                            WORLD_SIZE / 2 < fly_input_x) {
-                                printf("Error: x input out of bounds.\n");
-                                break;
-                        }
+        //         getline(&command, &size_of_commands, stdin);
 
-                        if (fly_input_y < WORLD_SIZE / -2 ||
-                            WORLD_SIZE / 2 < fly_input_y) {
-                                printf("Error: y input out of bounds.\n");
-                                break;
-                        }
+        //         switch (command[0]) {
+        //         case 'n':
+        //                 if (cur_chunk.y == 0) {
+        //                         break;
+        //                 }
+        //                 cur_chunk.y--;
+        //                 break;
+        //         case 's':
+        //                 if (cur_chunk.y == WORLD_SIZE - 1) {
+        //                         break;
+        //                 }
+        //                 cur_chunk.y++;
+        //                 break;
+        //         case 'w':
+        //                 if (cur_chunk.x == 0) {
+        //                         break;
+        //                 }
+        //                 cur_chunk.x--;
+        //                 break;
+        //         case 'e':
+        //                 if (cur_chunk.x == WORLD_SIZE - 1) {
+        //                         break;
+        //                 }
+        //                 cur_chunk.x++;
+        //                 break;
+        //         case 'q':
+        //                 return 0;
+        //         case 'f':
+        //                 if (sscanf(command, "f %d %d", &fly_input_x,
+        //                            &fly_input_y) != 2) {
+        //                         printf("Error: Fly input should be "
+        //                                "formated "
+        //                                "like 'f x y'.\n");
+        //                         break;
+        //                 }
 
-                        cur_chunk.x = fly_input_x + WORLD_SIZE / 2;
-                        cur_chunk.y = fly_input_y + WORLD_SIZE / 2;
-                        break;
-                default:
-                        printf("Error: Command '%c' not found.\n", command[0]);
-                        break;
-                }
+        //                 if (fly_input_x < WORLD_SIZE / -2 ||
+        //                     WORLD_SIZE / 2 < fly_input_x) {
+        //                         printf("Error: x input out of bounds.\n");
+        //                         break;
+        //                 }
 
-                printf("\n");
-        }
+        //                 if (fly_input_y < WORLD_SIZE / -2 ||
+        //                     WORLD_SIZE / 2 < fly_input_y) {
+        //                         printf("Error: y input out of bounds.\n");
+        //                         break;
+        //                 }
+
+        //                 cur_chunk.x = fly_input_x + WORLD_SIZE / 2;
+        //                 cur_chunk.y = fly_input_y + WORLD_SIZE / 2;
+        //                 break;
+        //         default:
+        //                 printf("Error: Command '%c' not found.\n",
+        //                 command[0]); break;
+        //         }
+
+        //         printf("\n");
+        // }
 }
