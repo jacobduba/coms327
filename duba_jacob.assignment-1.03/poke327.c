@@ -3,6 +3,7 @@
 #include <linux/limits.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <time.h>
 
 #define WORLD_SIZE 401
@@ -15,29 +16,31 @@
 
 #define MAX_ATTEMPTS_TO_PLACE_BUILDING 1000
 
-struct cord {
+typedef struct cord {
         int x;
         int y;
-} typedef cord_t;
+} cord_t;
 
 typedef enum terrain {
         EMPTY,
         BOULDER,
-        TREE,
+        FOREST,
+        MOUNTAIN,
         TALL_GRASS,
         SHORT_GRASS,
         WATER,
         ROAD,
+        GATE,
         POKEMON_CENTER,
         POKEMART
 } land_t;
 
 typedef enum direction { NORTH, SOUTH, EAST, WEST } dir_t;
 
-struct chunk {
+typedef struct chunk {
         land_t terrain[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT];
         int n_gate_x, s_gate_x, e_gate_y, w_gate_y;
-} typedef chunk_t;
+} chunk_t;
 
 char get_land_char(land_t land) {
         switch (land) {
@@ -45,8 +48,10 @@ char get_land_char(land_t land) {
                 return 'E';
         case BOULDER:
                 return '%';
-        case TREE:
+        case FOREST:
                 return '^';
+        case MOUNTAIN:
+                return '%';
         case TALL_GRASS:
                 return ':';
         case SHORT_GRASS:
@@ -55,6 +60,8 @@ char get_land_char(land_t land) {
                 return '~';
         case ROAD:
                 return '#';
+        case GATE:
+                return '#';
         case POKEMON_CENTER:
                 return 'C';
         case POKEMART:
@@ -62,10 +69,14 @@ char get_land_char(land_t land) {
         }
 }
 
-void print_terrain(land_t terrain[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT]) {
+void print_terrain(land_t terrain[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT], cord_t pc) {
         for (int y = 0; y < CHUNK_Y_HEIGHT; y++) {
                 for (int x = 0; x < CHUNK_X_WIDTH; x++) {
-                        printf("%c", get_land_char(terrain[x][y]));
+                        if (pc.x == x && pc.y == y) {
+                                printf("@");
+                        } else {
+                                printf("%c", get_land_char(terrain[x][y]));
+                        }
                 }
                 printf("\n");
         }
@@ -103,22 +114,22 @@ int try_place_building(land_t terrain[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT],
         land_t *b3 = &terrain[c.x][c.y + 1];
         land_t *b4 = &terrain[c.x + 1][c.y + 1];
 
-        if (*b1 != TREE && *b1 != BOULDER && *b1 != TALL_GRASS &&
+        if (*b1 != FOREST && *b1 != BOULDER && *b1 != TALL_GRASS &&
             *b1 != SHORT_GRASS) {
                 return 1;
         }
 
-        if (*b2 != TREE && *b2 != BOULDER && *b2 != TALL_GRASS &&
+        if (*b2 != FOREST && *b2 != BOULDER && *b2 != TALL_GRASS &&
             *b2 != SHORT_GRASS) {
                 return 1;
         }
 
-        if (*b3 != TREE && *b3 != BOULDER && *b3 != TALL_GRASS &&
+        if (*b3 != FOREST && *b3 != BOULDER && *b3 != TALL_GRASS &&
             *b3 != SHORT_GRASS) {
                 return 1;
         }
 
-        if (*b4 != TREE && *b4 != BOULDER && *b4 != TALL_GRASS &&
+        if (*b4 != FOREST && *b4 != BOULDER && *b4 != TALL_GRASS &&
             *b4 != SHORT_GRASS) {
                 return 1;
         }
@@ -226,7 +237,7 @@ int get_terrain_cost(char type) {
                 return 70;
         case WATER:
                 return 100;
-        case TREE:
+        case FOREST:
                 return 25;
         case ROAD:
                 return 5;
@@ -370,89 +381,89 @@ int generate_paths(chunk_t *chunk, int n_gate_x, int s_gate_x, int w_gate_y,
         // in order to be connected the path would have to go through the edges.
 
         if (n_gate_exists && s_gate_exists && w_gate_exists && e_gate_exists) {
-                chunk->terrain[n_gate_x][0] = ROAD;
-                chunk->terrain[s_gate_x][CHUNK_Y_HEIGHT - 1] = ROAD;
+                chunk->terrain[n_gate_x][0] = GATE;
+                chunk->terrain[s_gate_x][CHUNK_Y_HEIGHT - 1] = GATE;
                 gen_path_from_cords(chunk->terrain, (cord_t){n_gate_x, 1},
                                     (cord_t){s_gate_x, CHUNK_Y_HEIGHT - 2});
 
-                chunk->terrain[0][w_gate_y] = ROAD;
-                chunk->terrain[CHUNK_X_WIDTH - 1][e_gate_y] = ROAD;
+                chunk->terrain[0][w_gate_y] = GATE;
+                chunk->terrain[CHUNK_X_WIDTH - 1][e_gate_y] = GATE;
                 gen_path_from_cords(chunk->terrain, (cord_t){1, w_gate_y},
                                     (cord_t){CHUNK_X_WIDTH - 2, e_gate_y});
         } else if (!n_gate_exists && s_gate_exists && w_gate_exists &&
                    e_gate_exists) {
-                chunk->terrain[0][w_gate_y] = ROAD;
-                chunk->terrain[CHUNK_X_WIDTH - 1][e_gate_y] = ROAD;
+                chunk->terrain[0][w_gate_y] = GATE;
+                chunk->terrain[CHUNK_X_WIDTH - 1][e_gate_y] = GATE;
                 gen_path_from_cords(chunk->terrain, (cord_t){1, w_gate_y},
                                     (cord_t){CHUNK_X_WIDTH - 2, e_gate_y});
 
                 find_random_road(chunk->terrain, &random_road_tile);
 
-                chunk->terrain[s_gate_x][CHUNK_Y_HEIGHT - 1] = ROAD;
+                chunk->terrain[s_gate_x][CHUNK_Y_HEIGHT - 1] = GATE;
                 gen_path_from_cords(chunk->terrain, random_road_tile,
                                     (cord_t){s_gate_x, CHUNK_Y_HEIGHT - 2});
         } else if (n_gate_exists && !s_gate_exists && w_gate_exists &&
                    e_gate_exists) {
-                chunk->terrain[0][w_gate_y] = ROAD;
-                chunk->terrain[CHUNK_X_WIDTH - 1][e_gate_y] = ROAD;
+                chunk->terrain[0][w_gate_y] = GATE;
+                chunk->terrain[CHUNK_X_WIDTH - 1][e_gate_y] = GATE;
                 gen_path_from_cords(chunk->terrain, (cord_t){1, w_gate_y},
                                     (cord_t){CHUNK_X_WIDTH - 2, e_gate_y});
 
                 find_random_road(chunk->terrain, &random_road_tile);
 
-                chunk->terrain[n_gate_x][0] = ROAD;
+                chunk->terrain[n_gate_x][0] = GATE;
                 gen_path_from_cords(chunk->terrain, (cord_t){n_gate_x, 1},
                                     random_road_tile);
         } else if (n_gate_exists && s_gate_exists && !w_gate_exists &&
                    e_gate_exists) {
-                chunk->terrain[n_gate_x][0] = ROAD;
-                chunk->terrain[s_gate_x][CHUNK_Y_HEIGHT - 1] = ROAD;
+                chunk->terrain[n_gate_x][0] = GATE;
+                chunk->terrain[s_gate_x][CHUNK_Y_HEIGHT - 1] = GATE;
                 gen_path_from_cords(chunk->terrain, (cord_t){n_gate_x, 1},
                                     (cord_t){s_gate_x, CHUNK_Y_HEIGHT - 2});
 
                 find_random_road(chunk->terrain, &random_road_tile);
 
-                chunk->terrain[CHUNK_X_WIDTH - 1][e_gate_y] = ROAD;
+                chunk->terrain[CHUNK_X_WIDTH - 1][e_gate_y] = GATE;
                 gen_path_from_cords(chunk->terrain, random_road_tile,
                                     (cord_t){CHUNK_X_WIDTH - 2, e_gate_y});
         } else if (n_gate_exists && s_gate_exists && w_gate_exists &&
                    !e_gate_exists) {
-                chunk->terrain[n_gate_x][0] = ROAD;
-                chunk->terrain[s_gate_x][CHUNK_Y_HEIGHT - 1] = ROAD;
+                chunk->terrain[n_gate_x][0] = GATE;
+                chunk->terrain[s_gate_x][CHUNK_Y_HEIGHT - 1] = GATE;
                 gen_path_from_cords(chunk->terrain, (cord_t){n_gate_x, 1},
                                     (cord_t){s_gate_x, CHUNK_Y_HEIGHT - 2});
 
                 find_random_road(chunk->terrain, &random_road_tile);
 
-                chunk->terrain[0][w_gate_y] = ROAD;
+                chunk->terrain[0][w_gate_y] = GATE;
                 gen_path_from_cords(chunk->terrain, (cord_t){1, w_gate_y},
                                     random_road_tile);
 
         } else if (n_gate_exists && !s_gate_exists && w_gate_exists &&
                    !e_gate_exists) {
-                chunk->terrain[n_gate_x][0] = ROAD;
-                chunk->terrain[0][w_gate_y] = ROAD;
+                chunk->terrain[n_gate_x][0] = GATE;
+                chunk->terrain[0][w_gate_y] = GATE;
 
                 gen_path_from_cords(chunk->terrain, (cord_t){n_gate_x, 1},
                                     (cord_t){1, w_gate_y});
         } else if (n_gate_exists && !s_gate_exists && !w_gate_exists &&
                    e_gate_exists) {
-                chunk->terrain[n_gate_x][0] = ROAD;
-                chunk->terrain[CHUNK_X_WIDTH - 1][e_gate_y] = ROAD;
+                chunk->terrain[n_gate_x][0] = GATE;
+                chunk->terrain[CHUNK_X_WIDTH - 1][e_gate_y] = GATE;
                 gen_path_from_cords(chunk->terrain, (cord_t){n_gate_x, 1},
                                     (cord_t){CHUNK_X_WIDTH - 2, e_gate_y});
 
         } else if (!n_gate_exists && s_gate_exists && w_gate_exists &&
                    !e_gate_exists) {
-                chunk->terrain[s_gate_x][CHUNK_Y_HEIGHT - 1] = ROAD;
-                chunk->terrain[0][w_gate_y] = ROAD;
+                chunk->terrain[s_gate_x][CHUNK_Y_HEIGHT - 1] = GATE;
+                chunk->terrain[0][w_gate_y] = GATE;
                 gen_path_from_cords(chunk->terrain,
                                     (cord_t){s_gate_x, CHUNK_Y_HEIGHT - 2},
                                     (cord_t){1, w_gate_y});
         } else if (!n_gate_exists && s_gate_exists && !w_gate_exists &&
                    e_gate_exists) {
-                chunk->terrain[s_gate_x][CHUNK_Y_HEIGHT - 1] = ROAD;
-                chunk->terrain[CHUNK_X_WIDTH - 1][e_gate_y] = ROAD;
+                chunk->terrain[s_gate_x][CHUNK_Y_HEIGHT - 1] = GATE;
+                chunk->terrain[CHUNK_X_WIDTH - 1][e_gate_y] = GATE;
                 gen_path_from_cords(chunk->terrain,
                                     (cord_t){s_gate_x, CHUNK_Y_HEIGHT - 2},
                                     (cord_t){CHUNK_X_WIDTH - 2, e_gate_y});
@@ -500,10 +511,10 @@ int generate_terrain(chunk_t *chunk, int place_pokemon_center,
                                 WATER);
         place_seed_in_gen_queue(chunk->terrain, &head, generation_queue,
                                 rand() % CHUNK_X_WIDTH, rand() % CHUNK_Y_HEIGHT,
-                                BOULDER);
+                                MOUNTAIN);
         place_seed_in_gen_queue(chunk->terrain, &head, generation_queue,
                                 rand() % CHUNK_X_WIDTH, rand() % CHUNK_Y_HEIGHT,
-                                TREE);
+                                FOREST);
 
         bfs_explore_generation(chunk->terrain, generation_queue, &head, &tail);
 
@@ -621,13 +632,69 @@ int create_chunk_if_not_exists(chunk_t *world[WORLD_SIZE][WORLD_SIZE],
         return 0;
 }
 
+int get_land_cost_hiker(land_t type) {
+        switch (type) {
+        case EMPTY:
+                return -1;
+        case BOULDER:
+                return -1;
+        case ROAD:
+                return 10;
+        case POKEMART:
+                return 50;
+        case POKEMON_CENTER:
+                return 50;
+        case TALL_GRASS:
+                return 15;
+        case SHORT_GRASS:
+                return 10;
+        case MOUNTAIN:
+                return 15;
+        case FOREST:
+                return -1;
+        case WATER:
+                return -1;
+        case GATE:
+                return -1;
+        }
+}
+
+void explore(struct sc_heap *heap,
+             land_t terrain[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT],
+             int hiker_dist[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT], cord_t cord,
+             int cost) {
+        int new_land_cost = get_land_cost_hiker(terrain[cord.x][cord.y]);
+
+        if (new_land_cost < 0) {
+                return;
+        }
+
+        int travel_cost = new_land_cost + cost;
+
+        cord_t *heap_cord = malloc(sizeof(cord_t));
+        heap_cord->x = cord.x;
+        heap_cord->y = cord.y;
+
+        if (travel_cost < hiker_dist[cord.x][cord.y]) {
+                hiker_dist[cord.x][cord.y] = travel_cost;
+                sc_heap_add(heap, travel_cost, heap_cord);
+        }
+
+        // if (hiker_dist[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT] )
+        // oka
+}
+
 int main(int argc, char *argv[]) {
         chunk_t *world[WORLD_SIZE][WORLD_SIZE];
         cord_t cur_chunk;
 
-        char *command;
-        size_t size_of_commands;
-        int fly_input_x, fly_input_y;
+        cord_t pc;
+        int hiker_dist[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT];
+        int rival_dist[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT];
+
+        // char *command;
+        // size_t size_of_commands;
+        // int fly_input_x, fly_input_y;
 
         srand(time(NULL));
 
@@ -642,7 +709,87 @@ int main(int argc, char *argv[]) {
 
         create_chunk_if_not_exists(world, cur_chunk);
 
-        print_terrain(world[cur_chunk.x][cur_chunk.y]->terrain);
+        do {
+                pc.x = rand() % (CHUNK_X_WIDTH - 2) + 1;
+                pc.y = rand() % (CHUNK_Y_HEIGHT - 2) + 1;
+        } while (world[cur_chunk.x][cur_chunk.y]->terrain[pc.x][pc.y] != ROAD);
+
+        print_terrain(world[cur_chunk.x][cur_chunk.y]->terrain, pc);
+
+        for (int x = 0; x < CHUNK_X_WIDTH; x++) {
+                for (int y = 0; y < CHUNK_Y_HEIGHT; y++) {
+                        hiker_dist[x][y] = INT_MAX;
+                        rival_dist[x][y] = INT_MAX;
+                }
+        }
+
+        // dijstrkas
+
+        land_t terrain[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT];
+
+        memcpy(terrain, world[cur_chunk.x][cur_chunk.y]->terrain,
+               sizeof(terrain));
+
+        struct sc_heap heap;
+        struct sc_heap_data *elem;
+
+        sc_heap_init(&heap, CHUNK_X_WIDTH * CHUNK_Y_HEIGHT * 8);
+
+        sc_heap_add(&heap, 0, &pc);
+        hiker_dist[pc.x][pc.y] = 0;
+
+        bool visited[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT];
+
+        for (int y = 0; y < CHUNK_Y_HEIGHT; y++) {
+                for (int x = 0; x < CHUNK_X_WIDTH; x++) {
+                        visited[x][y] = false;
+                }
+        }
+
+        while ((elem = sc_heap_pop(&heap)) != NULL) {
+                cord_t *pos = (cord_t *)elem->data;
+
+                int x = pos->x, y = pos->y;
+
+                if (visited[x][y]) {
+                        continue;
+                }
+
+                visited[x][y] = true;
+
+                int cur_cost = hiker_dist[x][y];
+
+                explore(&heap, terrain, hiker_dist, (cord_t){x - 1, y - 1},
+                        cur_cost);
+                explore(&heap, terrain, hiker_dist, (cord_t){x, y - 1},
+                        cur_cost);
+                explore(&heap, terrain, hiker_dist, (cord_t){x + 1, y - 1},
+                        cur_cost);
+                explore(&heap, terrain, hiker_dist, (cord_t){x, y - 1},
+                        cur_cost);
+                explore(&heap, terrain, hiker_dist, (cord_t){x, y + 1},
+                        cur_cost);
+                explore(&heap, terrain, hiker_dist, (cord_t){x + 1, y - 1},
+                        cur_cost);
+                explore(&heap, terrain, hiker_dist, (cord_t){x + 1, y},
+                        cur_cost);
+                explore(&heap, terrain, hiker_dist, (cord_t){x + 1, y + 1},
+                        cur_cost);
+        }
+
+        // end
+
+        for (int y = 0; y < CHUNK_Y_HEIGHT; y++) {
+                printf(" ");
+                for (int x = 0; x < CHUNK_X_WIDTH; x++) {
+                        if (hiker_dist[x][y] == INT_MAX) {
+                                printf("   ");
+                        } else {
+                                printf("%02d ", hiker_dist[x][y] % 100);
+                        }
+                }
+                printf("\n");
+        }
 
         // for (;;) {
         //         create_chunk_if_not_exists(world, cur_chunk);
