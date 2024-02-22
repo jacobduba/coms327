@@ -659,11 +659,38 @@ int get_land_cost_hiker(land_t type) {
         }
 }
 
+int get_land_cost_rival(land_t type) {
+        switch (type) {
+        case EMPTY:
+                return -1;
+        case BOULDER:
+                return -1;
+        case ROAD:
+                return 10;
+        case POKEMART:
+                return 50;
+        case POKEMON_CENTER:
+                return 50;
+        case TALL_GRASS:
+                return 20;
+        case SHORT_GRASS:
+                return 10;
+        case MOUNTAIN:
+                return -1;
+        case FOREST:
+                return -1;
+        case WATER:
+                return -1;
+        case GATE:
+                return -1;
+        }
+}
+
 void explore(struct sc_heap *heap,
              land_t terrain[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT],
-             int hiker_dist[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT], cord_t cord,
-             int cost) {
-        int new_land_cost = get_land_cost_hiker(terrain[cord.x][cord.y]);
+             int dist_map[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT], cord_t cord, int cost,
+             int (*get_land_cost)(land_t type)) {
+        int new_land_cost = get_land_cost(terrain[cord.x][cord.y]);
 
         if (new_land_cost < 0) {
                 return;
@@ -675,68 +702,30 @@ void explore(struct sc_heap *heap,
         heap_cord->x = cord.x;
         heap_cord->y = cord.y;
 
-        if (travel_cost < hiker_dist[cord.x][cord.y]) {
-                hiker_dist[cord.x][cord.y] = travel_cost;
+        if (travel_cost < dist_map[cord.x][cord.y]) {
+                dist_map[cord.x][cord.y] = travel_cost;
                 sc_heap_add(heap, travel_cost, heap_cord);
         }
-
-        // if (hiker_dist[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT] )
-        // oka
 }
 
-int main(int argc, char *argv[]) {
-        chunk_t *world[WORLD_SIZE][WORLD_SIZE];
-        cord_t cur_chunk;
-
-        cord_t pc;
-        int hiker_dist[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT];
-        int rival_dist[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT];
-
-        // char *command;
-        // size_t size_of_commands;
-        // int fly_input_x, fly_input_y;
-
-        srand(time(NULL));
-
-        for (int x = 0; x < WORLD_SIZE; x++) {
-                for (int y = 0; y < WORLD_SIZE; y++) {
-                        world[x][y] = NULL;
-                }
-        }
-
-        cur_chunk.x = 200;
-        cur_chunk.y = 200;
-
-        create_chunk_if_not_exists(world, cur_chunk);
-
-        do {
-                pc.x = rand() % (CHUNK_X_WIDTH - 2) + 1;
-                pc.y = rand() % (CHUNK_Y_HEIGHT - 2) + 1;
-        } while (world[cur_chunk.x][cur_chunk.y]->terrain[pc.x][pc.y] != ROAD);
-
-        print_terrain(world[cur_chunk.x][cur_chunk.y]->terrain, pc);
-
+void generate_distance_map(int dist_map[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT],
+                           land_t terrain[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT],
+                           cord_t pc, int (*get_land_cost)(land_t type)) {
         for (int x = 0; x < CHUNK_X_WIDTH; x++) {
                 for (int y = 0; y < CHUNK_Y_HEIGHT; y++) {
-                        hiker_dist[x][y] = INT_MAX;
-                        rival_dist[x][y] = INT_MAX;
+                        dist_map[x][y] = INT_MAX;
                 }
         }
 
         // dijstrkas
 
-        land_t terrain[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT];
-
-        memcpy(terrain, world[cur_chunk.x][cur_chunk.y]->terrain,
-               sizeof(terrain));
-
         struct sc_heap heap;
         struct sc_heap_data *elem;
 
-        sc_heap_init(&heap, CHUNK_X_WIDTH * CHUNK_Y_HEIGHT * 8);
+        sc_heap_init(&heap, CHUNK_X_WIDTH * CHUNK_Y_HEIGHT);
 
         sc_heap_add(&heap, 0, &pc);
-        hiker_dist[pc.x][pc.y] = 0;
+        dist_map[pc.x][pc.y] = 0;
 
         bool visited[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT];
 
@@ -757,27 +746,65 @@ int main(int argc, char *argv[]) {
 
                 visited[x][y] = true;
 
-                int cur_cost = hiker_dist[x][y];
+                int cur_cost = dist_map[x][y];
 
-                explore(&heap, terrain, hiker_dist, (cord_t){x - 1, y - 1},
-                        cur_cost);
-                explore(&heap, terrain, hiker_dist, (cord_t){x, y - 1},
-                        cur_cost);
-                explore(&heap, terrain, hiker_dist, (cord_t){x + 1, y - 1},
-                        cur_cost);
-                explore(&heap, terrain, hiker_dist, (cord_t){x, y - 1},
-                        cur_cost);
-                explore(&heap, terrain, hiker_dist, (cord_t){x, y + 1},
-                        cur_cost);
-                explore(&heap, terrain, hiker_dist, (cord_t){x + 1, y - 1},
-                        cur_cost);
-                explore(&heap, terrain, hiker_dist, (cord_t){x + 1, y},
-                        cur_cost);
-                explore(&heap, terrain, hiker_dist, (cord_t){x + 1, y + 1},
-                        cur_cost);
+                explore(&heap, terrain, dist_map, (cord_t){x - 1, y - 1},
+                        cur_cost, get_land_cost);
+                explore(&heap, terrain, dist_map, (cord_t){x, y - 1}, cur_cost,
+                        get_land_cost);
+                explore(&heap, terrain, dist_map, (cord_t){x + 1, y - 1},
+                        cur_cost, get_land_cost);
+                explore(&heap, terrain, dist_map, (cord_t){x - 1, y}, cur_cost,
+                        get_land_cost);
+                explore(&heap, terrain, dist_map, (cord_t){x + 1, y}, cur_cost,
+                        get_land_cost);
+                explore(&heap, terrain, dist_map, (cord_t){x - 1, y + 1},
+                        cur_cost, get_land_cost);
+                explore(&heap, terrain, dist_map, (cord_t){x, y + 1}, cur_cost,
+                        get_land_cost);
+                explore(&heap, terrain, dist_map, (cord_t){x + 1, y + 1},
+                        cur_cost, get_land_cost);
+        }
+}
+
+int main(int argc, char *argv[]) {
+        chunk_t *world[WORLD_SIZE][WORLD_SIZE];
+        cord_t cur_chunk;
+
+        cord_t pc;
+        int hiker_dist[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT];
+        int rival_dist[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT];
+
+        // char *command;
+        // size_t size_of_commands;
+        // int fly_input_x, fly_input_y;
+
+        // int seed = time(NULL);
+        int seed = 1708573486;
+        printf("Using seed: %d\n", seed);
+        srand(seed);
+
+        for (int x = 0; x < WORLD_SIZE; x++) {
+                for (int y = 0; y < WORLD_SIZE; y++) {
+                        world[x][y] = NULL;
+                }
         }
 
-        // end
+        cur_chunk.x = 200;
+        cur_chunk.y = 200;
+
+        create_chunk_if_not_exists(world, cur_chunk);
+
+        do {
+                pc.x = rand() % (CHUNK_X_WIDTH - 2) + 1;
+                pc.y = rand() % (CHUNK_Y_HEIGHT - 2) + 1;
+        } while (world[cur_chunk.x][cur_chunk.y]->terrain[pc.x][pc.y] != ROAD);
+
+        print_terrain(world[cur_chunk.x][cur_chunk.y]->terrain, pc);
+
+        generate_distance_map(hiker_dist,
+                              world[cur_chunk.x][cur_chunk.y]->terrain, pc,
+                              get_land_cost_hiker);
 
         for (int y = 0; y < CHUNK_Y_HEIGHT; y++) {
                 printf(" ");
@@ -786,6 +813,22 @@ int main(int argc, char *argv[]) {
                                 printf("   ");
                         } else {
                                 printf("%02d ", hiker_dist[x][y] % 100);
+                        }
+                }
+                printf("\n");
+        }
+
+        generate_distance_map(rival_dist,
+                              world[cur_chunk.x][cur_chunk.y]->terrain, pc,
+                              get_land_cost_rival);
+
+        for (int y = 0; y < CHUNK_Y_HEIGHT; y++) {
+                printf(" ");
+                for (int x = 0; x < CHUNK_X_WIDTH; x++) {
+                        if (rival_dist[x][y] == INT_MAX) {
+                                printf("   ");
+                        } else {
+                                printf("%02d ", rival_dist[x][y] % 100);
                         }
                 }
                 printf("\n");
