@@ -1,3 +1,72 @@
+commit 3ab9ca86443676335d659519112658ee652e244f
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Wed Feb 21 21:51:13 2024 -0600
+
+    Refactored to reuse hiker_dist code for rival_dist
+
+commit 3131df923cc7bef46f720c17610ad3854a0b7f0e
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Mon Feb 19 18:55:19 2024 -0600
+
+    Working hiker_dist
+
+commit b6bca3718207dda787cc5b0100b2408dd853bd55
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Sun Feb 18 19:31:29 2024 -0600
+
+    Move terrain from chars to enum
+    New requirements allow different land types to be repersented by the same icon.
+    
+    So, terrain is now repersented by enums which I then convert to characters when printing.
+
+commit 8c7d6beeda40a3c13846188aae83f2ff98d02905
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Sun Feb 18 19:19:48 2024 -0600
+
+    Remove terrain explorer
+
+commit ebde594bfdfb94d3fa86e49d9aff8d87574165ec
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Sun Feb 18 19:03:35 2024 -0600
+
+    Changes
+
+commit 9b1246af0edc372437daa16fc849e970d13c80db
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Sat Feb 10 21:15:22 2024 -0600
+
+    Refactor to reduce indents
+
+commit b3029de5d16fbc0dade2a8ff4200940d514049cf
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Sat Feb 10 20:12:57 2024 -0600
+
+    Move to 8 space tabs
+    My belief is that 8 space tabs will reduce nesting.
+    I have been getting confused by nesting.
+
+commit 60d24ab8edbbb7a9a133bb66f8472ccd20a87cf1
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Sat Feb 10 14:05:27 2024 -0600
+
+    Fix bug causing some times not to be explored
+    I'm creating noise on the map by sometimes not exploring with BFS.
+    
+    However, a tile would remain empty if all four surrounding tiles choose not to explore.
+    
+    The fix: if not exploring, readd current tile to queue.
+
+commit f7a19ad91d247b7e009dba000ebe59731f6f43f7
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Thu Feb 8 13:08:48 2024 -0600
+
+    Noise on edges of land types.
+    
+    Introduced noise on the edges of land to make the
+    maps more interesting.
+    
+    This works by only growing the seed 4/5ths of the time.
+
 commit a8b40b05c46c0661153341a9c0c35b3edfb23b57
 Author: Jacob Duba <jacob@mooshoe.me>
 Date:   Wed Feb 7 22:54:12 2024 -0600
