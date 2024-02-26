@@ -23,6 +23,38 @@
                 ffff;                                                          \
         }
 
+// Stringification - A macro parameter prefixed with a hash will be turned into
+// a string
+#define stringify(x) #x
+
+struct lutable_entry {
+        char *name;
+        int (*func)(int);
+};
+
+struct lutable_entry lookup_table[] = {
+    {"bar", bar},
+    {"baz", baz},
+    {"bzz", bzz},
+    {"foo", foo},
+};
+
+#define luentry(x)                                                             \
+        { #x, x }
+
+struct lutable_entru lookup_table[] = {
+    luentry(bar),
+    luentry(baz),
+    luentry(bzz),
+    luentry(foo),
+};
+
+// Concatenation - Double hash hash concatenates left and right hand sides into
+// a new symbol. One of these a macro parameter, which is expanded before
+// concatenation. The other can be any string of symbols.
+#define concat_pre(x) foo_##x
+#define concat_suf(x) x##_bar
+
 int main(int argc, char *argv[]) {
         printf("%d\n", FOO);
 
@@ -37,6 +69,11 @@ int main(int argc, char *argv[]) {
 
         min3(a, b, c);
         min4(a, b, c, d);
+
+        bsearch(key, lookup_table, s, n, compare)->func;
+
+        concat_pre(bar);
+        concat_suf(bar);
 
         return 0;
 }
