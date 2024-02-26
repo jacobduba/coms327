@@ -1,4 +1,5 @@
 #include "sc_heap.h"
+#include <getopt.h>
 #include <limits.h>
 #include <linux/limits.h>
 #include <stdio.h>
@@ -6,6 +7,7 @@
 #include <string.h>
 #include <time.h>
 
+// Length and height for the world
 #define WORLD_SIZE 401
 
 #define CHUNK_X_WIDTH 80
@@ -15,6 +17,9 @@
 #define TERRAIN_NOISE 70
 
 #define MAX_ATTEMPTS_TO_PLACE_BUILDING 1000
+
+#define DEFAULT_NUMTRAINERS 10
+#define MAX_NUMTRAINERS 99
 
 typedef struct cord {
         int x;
@@ -37,9 +42,26 @@ typedef enum terrain {
 
 typedef enum direction { NORTH, SOUTH, EAST, WEST } dir_t;
 
+typedef enum character {
+        PC,
+        HIKER,
+        RIVAL,
+        PACER,
+        WANDERER,
+        SEMTRY,
+        EXPLORER
+} character_t;
+
+typedef struct character_event {
+        char type;
+        cord_t pos;
+        int gt;
+} character_event_t;
+
 typedef struct chunk {
         land_t terrain[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT];
         int n_gate_x, s_gate_x, e_gate_y, w_gate_y;
+        character_event_t event_queue[MAX_NUMTRAINERS + 1];
 } chunk_t;
 
 char get_land_char(land_t land) {
@@ -69,13 +91,14 @@ char get_land_char(land_t land) {
         }
 }
 
-void print_terrain(land_t terrain[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT], cord_t pc) {
+void print_chunk(chunk_t *chunk, cord_t pc) {
         for (int y = 0; y < CHUNK_Y_HEIGHT; y++) {
                 for (int x = 0; x < CHUNK_X_WIDTH; x++) {
                         if (pc.x == x && pc.y == y) {
                                 printf("@");
                         } else {
-                                printf("%c", get_land_char(terrain[x][y]));
+                                printf("%c",
+                                       get_land_char(chunk->terrain[x][y]));
                         }
                 }
                 printf("\n");
@@ -768,19 +791,57 @@ void generate_distance_map(int dist_map[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT],
 }
 
 int main(int argc, char *argv[]) {
+        int seed;
+
         chunk_t *world[WORLD_SIZE][WORLD_SIZE];
         cord_t cur_chunk;
-
         cord_t pc;
+
         int hiker_dist[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT];
         int rival_dist[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT];
+
+        int opt;
+        int option_index = 0;
+
+        int numtrainers = DEFAULT_NUMTRAINERS;
+
+        struct option long_options[] = {
+            {
+                "numtrainers",
+                required_argument,
+                0,
+                'n',
+
+            },
+        };
+
+        while ((opt = getopt_long(argc, argv, "n:", long_options,
+                                  &option_index)) != -1) {
+                switch (opt) {
+                case 'n':
+                        numtrainers = atoi(optarg);
+                        if (numtrainers > MAX_NUMTRAINERS) {
+                                fprintf(stderr,
+                                        "Maxium number of trainers is 99!\n");
+                                return -1;
+                        }
+                        printf("numtrainers=%d\n", numtrainers);
+                        break;
+                case ':':
+                        fprintf(stderr, "Option -%c requires an argument.\n",
+                                optopt);
+                        return -1;
+                case '?':
+                        fprintf(stderr, "Unknown option: -%c\n", optopt);
+                        return -1;
+                }
+        }
 
         // char *command;
         // size_t size_of_commands;
         // int fly_input_x, fly_input_y;
 
-        // int seed = time(NULL);
-        int seed = 1708573486;
+        seed = time(NULL);
         printf("Using seed: %d\n", seed);
         srand(seed);
 
@@ -800,39 +861,15 @@ int main(int argc, char *argv[]) {
                 pc.y = rand() % (CHUNK_Y_HEIGHT - 2) + 1;
         } while (world[cur_chunk.x][cur_chunk.y]->terrain[pc.x][pc.y] != ROAD);
 
-        print_terrain(world[cur_chunk.x][cur_chunk.y]->terrain, pc);
+        print_chunk(world[cur_chunk.x][cur_chunk.y], pc);
 
         generate_distance_map(hiker_dist,
                               world[cur_chunk.x][cur_chunk.y]->terrain, pc,
                               get_land_cost_hiker);
 
-        for (int y = 0; y < CHUNK_Y_HEIGHT; y++) {
-                printf(" ");
-                for (int x = 0; x < CHUNK_X_WIDTH; x++) {
-                        if (hiker_dist[x][y] == INT_MAX) {
-                                printf("   ");
-                        } else {
-                                printf("%02d ", hiker_dist[x][y] % 100);
-                        }
-                }
-                printf("\n");
-        }
-
         generate_distance_map(rival_dist,
                               world[cur_chunk.x][cur_chunk.y]->terrain, pc,
                               get_land_cost_rival);
-
-        for (int y = 0; y < CHUNK_Y_HEIGHT; y++) {
-                printf(" ");
-                for (int x = 0; x < CHUNK_X_WIDTH; x++) {
-                        if (rival_dist[x][y] == INT_MAX) {
-                                printf("   ");
-                        } else {
-                                printf("%02d ", rival_dist[x][y] % 100);
-                        }
-                }
-                printf("\n");
-        }
 
         // for (;;) {
         //         create_chunk_if_not_exists(world, cur_chunk);
