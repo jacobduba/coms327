@@ -19,7 +19,6 @@
 #define MAX_ATTEMPTS_TO_PLACE_BUILDING 1000
 
 #define DEFAULT_NUMTRAINERS 10
-#define MAX_NUMTRAINERS 99
 
 typedef struct cord {
         int x;
@@ -42,29 +41,30 @@ typedef enum terrain {
 
 typedef enum direction { NORTH, SOUTH, EAST, WEST } dir_t;
 
-typedef enum character {
+typedef enum entity_type {
         PC,
         HIKER,
         RIVAL,
         PACER,
         WANDERER,
-        SEMTRY,
+        SENTRY,
         EXPLORER
-} character_t;
+} entity_type_t;
 
-typedef struct character_event {
+typedef struct entity {
         char type;
         cord_t pos;
-        int gt;
-} character_event_t;
+        int gt; // Next turn
+} entity_t;
 
 typedef struct chunk {
         land_t terrain[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT];
         int n_gate_x, s_gate_x, e_gate_y, w_gate_y;
-        character_event_t event_queue[MAX_NUMTRAINERS + 1];
+        entity_t *entities;
+        int num_entities;
 } chunk_t;
 
-char get_land_char(land_t land) {
+char land_t_to_char(land_t land) {
         switch (land) {
         case EMPTY:
                 return 'E';
@@ -91,15 +91,46 @@ char get_land_char(land_t land) {
         }
 }
 
-void print_chunk(chunk_t *chunk, cord_t pc) {
+char entity_type_t_to_char(entity_type_t entity_type) {
+        switch (entity_type) {
+        case PC:
+                return '@';
+        case HIKER:
+                return 'h';
+        case RIVAL:
+                return 'r';
+        case PACER:
+                return 'p';
+        case WANDERER:
+                return 'w';
+        case SENTRY:
+                return 's';
+        case EXPLORER:
+                return 'e';
+        }
+}
+
+/**
+ * If an entity is at pos, return entity.
+ * Else return land at the pos.
+ */
+char get_char_for_pos(cord_t pos, chunk_t *chunk) {
+        // TODO change loop into map?
+        for (int i = 0; i < chunk->num_entities; i++) {
+                entity_t entity = chunk->entities[i];
+                cord_t entity_pos = entity.pos;
+                if (entity_pos.y == pos.y && entity_pos.x == pos.x) {
+                        return entity_type_t_to_char(entity.type);
+                }
+        }
+
+        return land_t_to_char(chunk->terrain[pos.x][pos.y]);
+}
+
+void print_chunk(chunk_t *chunk) {
         for (int y = 0; y < CHUNK_Y_HEIGHT; y++) {
                 for (int x = 0; x < CHUNK_X_WIDTH; x++) {
-                        if (pc.x == x && pc.y == y) {
-                                printf("@");
-                        } else {
-                                printf("%c",
-                                       get_land_char(chunk->terrain[x][y]));
-                        }
+                        printf("%c", get_char_for_pos((cord_t){x, y}, chunk));
                 }
                 printf("\n");
         }
@@ -610,51 +641,6 @@ int get_gate_coordinates(chunk_t *world[WORLD_SIZE][WORLD_SIZE], cord_t chunk,
         }
 }
 
-int create_chunk_if_not_exists(chunk_t *world[WORLD_SIZE][WORLD_SIZE],
-                               cord_t cur_chunk) {
-        chunk_t *chunk;
-        int manhatten_dist;
-        int n_gate_x, s_gate_x, w_gate_y, e_gate_y;
-        int place_poke_center, place_pokemart;
-        int prob_of_building;
-
-        if (world[cur_chunk.x][cur_chunk.y]) {
-                return 1;
-        }
-
-        chunk = malloc(sizeof(chunk_t));
-
-        chunk->w_gate_y = get_gate_coordinates(
-            world, (cord_t){cur_chunk.x - 1, cur_chunk.y}, EAST);
-        chunk->e_gate_y = get_gate_coordinates(
-            world, (cord_t){cur_chunk.x + 1, cur_chunk.y}, WEST);
-        chunk->n_gate_x = get_gate_coordinates(
-            world, (cord_t){cur_chunk.x, cur_chunk.y - 1}, SOUTH);
-        chunk->s_gate_x = get_gate_coordinates(
-            world, (cord_t){cur_chunk.x, cur_chunk.y + 1}, NORTH);
-
-        manhatten_dist = abs(cur_chunk.x - WORLD_SIZE / 2) +
-                         abs(cur_chunk.y - WORLD_SIZE / 2);
-        if (manhatten_dist < 200) {
-                prob_of_building = (float)-45 * manhatten_dist / 200 + 50;
-        } else {
-                prob_of_building = 5;
-        }
-
-        place_poke_center = rand() % 100 <= prob_of_building;
-        place_pokemart = rand() % 100 <= prob_of_building;
-
-        if (cur_chunk.x == 200 && cur_chunk.y == 200) {
-                place_poke_center = 1;
-                place_pokemart = 1;
-        }
-
-        world[cur_chunk.x][cur_chunk.y] = chunk;
-        generate_terrain(chunk, place_poke_center, place_pokemart);
-
-        return 0;
-}
-
 int get_land_cost_hiker(land_t type) {
         switch (type) {
         case EMPTY:
@@ -709,10 +695,78 @@ int get_land_cost_rival(land_t type) {
         }
 }
 
-void explore(struct sc_heap *heap,
-             land_t terrain[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT],
-             int dist_map[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT], cord_t cord, int cost,
-             int (*get_land_cost)(land_t type)) {
+int create_chunk_if_not_exists(chunk_t *world[WORLD_SIZE][WORLD_SIZE],
+                               cord_t cur_chunk, int num_trainers) {
+        chunk_t *chunk;
+        int manhatten_dist;
+        int n_gate_x, s_gate_x, w_gate_y, e_gate_y;
+        int place_poke_center, place_pokemart;
+        int prob_of_building;
+
+        if (world[cur_chunk.x][cur_chunk.y]) {
+                return 1;
+        }
+
+        chunk = malloc(sizeof(chunk_t));
+
+        chunk->w_gate_y = get_gate_coordinates(
+            world, (cord_t){cur_chunk.x - 1, cur_chunk.y}, EAST);
+        chunk->e_gate_y = get_gate_coordinates(
+            world, (cord_t){cur_chunk.x + 1, cur_chunk.y}, WEST);
+        chunk->n_gate_x = get_gate_coordinates(
+            world, (cord_t){cur_chunk.x, cur_chunk.y - 1}, SOUTH);
+        chunk->s_gate_x = get_gate_coordinates(
+            world, (cord_t){cur_chunk.x, cur_chunk.y + 1}, NORTH);
+
+        manhatten_dist = abs(cur_chunk.x - WORLD_SIZE / 2) +
+                         abs(cur_chunk.y - WORLD_SIZE / 2);
+        if (manhatten_dist < 200) {
+                prob_of_building = (float)-45 * manhatten_dist / 200 + 50;
+        } else {
+                prob_of_building = 5;
+        }
+
+        place_poke_center = rand() % 100 <= prob_of_building;
+        place_pokemart = rand() % 100 <= prob_of_building;
+
+        if (cur_chunk.x == 200 && cur_chunk.y == 200) {
+                place_poke_center = 1;
+                place_pokemart = 1;
+        }
+
+        generate_terrain(chunk, place_poke_center, place_pokemart);
+
+        // Player is an entity -> |entities| = numtrainers + 1
+        chunk->num_entities = num_trainers + 1;
+
+        void *e = malloc((chunk->num_entities) * sizeof(entity_t));
+        chunk->entities = e;
+
+        for (int i = 0; i < chunk->num_entities; i++) {
+                chunk->entities[i] = (entity_t){0};
+        }
+
+        // First slot is player
+        cord_t pc_cord;
+        do {
+                pc_cord.x = rand() % (CHUNK_X_WIDTH - 2) + 1;
+                pc_cord.y = rand() % (CHUNK_Y_HEIGHT - 2) + 1;
+        } while (chunk->terrain[pc_cord.x][pc_cord.y] != ROAD);
+
+        chunk->entities[0] = (entity_t){PC, pc_cord, 0};
+
+        // todo initialize entities
+
+        world[cur_chunk.x][cur_chunk.y] = chunk;
+
+        return 0;
+}
+
+void generate_dist_map_explore(struct sc_heap *heap,
+                               land_t terrain[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT],
+                               int dist_map[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT],
+                               cord_t cord, int cost,
+                               int (*get_land_cost)(land_t type)) {
         int new_land_cost = get_land_cost(terrain[cord.x][cord.y]);
 
         if (new_land_cost < 0) {
@@ -739,8 +793,6 @@ void generate_distance_map(int dist_map[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT],
                         dist_map[x][y] = INT_MAX;
                 }
         }
-
-        // dijstrkas
 
         struct sc_heap heap;
         struct sc_heap_data *elem;
@@ -771,22 +823,30 @@ void generate_distance_map(int dist_map[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT],
 
                 int cur_cost = dist_map[x][y];
 
-                explore(&heap, terrain, dist_map, (cord_t){x - 1, y - 1},
-                        cur_cost, get_land_cost);
-                explore(&heap, terrain, dist_map, (cord_t){x, y - 1}, cur_cost,
-                        get_land_cost);
-                explore(&heap, terrain, dist_map, (cord_t){x + 1, y - 1},
-                        cur_cost, get_land_cost);
-                explore(&heap, terrain, dist_map, (cord_t){x - 1, y}, cur_cost,
-                        get_land_cost);
-                explore(&heap, terrain, dist_map, (cord_t){x + 1, y}, cur_cost,
-                        get_land_cost);
-                explore(&heap, terrain, dist_map, (cord_t){x - 1, y + 1},
-                        cur_cost, get_land_cost);
-                explore(&heap, terrain, dist_map, (cord_t){x, y + 1}, cur_cost,
-                        get_land_cost);
-                explore(&heap, terrain, dist_map, (cord_t){x + 1, y + 1},
-                        cur_cost, get_land_cost);
+                generate_dist_map_explore(&heap, terrain, dist_map,
+                                          (cord_t){x - 1, y - 1}, cur_cost,
+                                          get_land_cost);
+                generate_dist_map_explore(&heap, terrain, dist_map,
+                                          (cord_t){x, y - 1}, cur_cost,
+                                          get_land_cost);
+                generate_dist_map_explore(&heap, terrain, dist_map,
+                                          (cord_t){x + 1, y - 1}, cur_cost,
+                                          get_land_cost);
+                generate_dist_map_explore(&heap, terrain, dist_map,
+                                          (cord_t){x - 1, y}, cur_cost,
+                                          get_land_cost);
+                generate_dist_map_explore(&heap, terrain, dist_map,
+                                          (cord_t){x + 1, y}, cur_cost,
+                                          get_land_cost);
+                generate_dist_map_explore(&heap, terrain, dist_map,
+                                          (cord_t){x - 1, y + 1}, cur_cost,
+                                          get_land_cost);
+                generate_dist_map_explore(&heap, terrain, dist_map,
+                                          (cord_t){x, y + 1}, cur_cost,
+                                          get_land_cost);
+                generate_dist_map_explore(&heap, terrain, dist_map,
+                                          (cord_t){x + 1, y + 1}, cur_cost,
+                                          get_land_cost);
         }
 }
 
@@ -795,15 +855,14 @@ int main(int argc, char *argv[]) {
 
         chunk_t *world[WORLD_SIZE][WORLD_SIZE];
         cord_t cur_chunk;
-        cord_t pc;
 
         int hiker_dist[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT];
         int rival_dist[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT];
 
+        int numtrainers = DEFAULT_NUMTRAINERS;
+
         int opt;
         int option_index = 0;
-
-        int numtrainers = DEFAULT_NUMTRAINERS;
 
         struct option long_options[] = {
             {
@@ -820,11 +879,6 @@ int main(int argc, char *argv[]) {
                 switch (opt) {
                 case 'n':
                         numtrainers = atoi(optarg);
-                        if (numtrainers > MAX_NUMTRAINERS) {
-                                fprintf(stderr,
-                                        "Maxium number of trainers is 99!\n");
-                                return -1;
-                        }
                         printf("numtrainers=%d\n", numtrainers);
                         break;
                 case ':':
@@ -836,10 +890,6 @@ int main(int argc, char *argv[]) {
                         return -1;
                 }
         }
-
-        // char *command;
-        // size_t size_of_commands;
-        // int fly_input_x, fly_input_y;
 
         seed = time(NULL);
         printf("Using seed: %d\n", seed);
@@ -854,22 +904,21 @@ int main(int argc, char *argv[]) {
         cur_chunk.x = 200;
         cur_chunk.y = 200;
 
-        create_chunk_if_not_exists(world, cur_chunk);
+        create_chunk_if_not_exists(world, cur_chunk, numtrainers);
 
-        do {
-                pc.x = rand() % (CHUNK_X_WIDTH - 2) + 1;
-                pc.y = rand() % (CHUNK_Y_HEIGHT - 2) + 1;
-        } while (world[cur_chunk.x][cur_chunk.y]->terrain[pc.x][pc.y] != ROAD);
+        print_chunk(world[cur_chunk.x][cur_chunk.y]);
 
-        print_chunk(world[cur_chunk.x][cur_chunk.y], pc);
+        // generate_distance_map(hiker_dist,
+        //                       world[cur_chunk.x][cur_chunk.y]->terrain,
+        //                       get_land_cost_hiker);
 
-        generate_distance_map(hiker_dist,
-                              world[cur_chunk.x][cur_chunk.y]->terrain, pc,
-                              get_land_cost_hiker);
+        // generate_distance_map(rival_dist,
+        //                       world[cur_chunk.x][cur_chunk.y]->terrain,
+        //                       get_land_cost_rival);
 
-        generate_distance_map(rival_dist,
-                              world[cur_chunk.x][cur_chunk.y]->terrain, pc,
-                              get_land_cost_rival);
+        // char *command;
+        // size_t size_of_commands;
+        // int fly_input_x, fly_input_y;
 
         // for (;;) {
         //         create_chunk_if_not_exists(world, cur_chunk);
