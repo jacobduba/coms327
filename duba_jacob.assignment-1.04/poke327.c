@@ -1,4 +1,5 @@
 #include "sc_heap.h"
+#include <c++/13/variant>
 #include <getopt.h>
 #include <limits.h>
 #include <linux/limits.h>
@@ -48,7 +49,8 @@ typedef enum entity_type {
         PACER,
         WANDERER,
         SENTRY,
-        EXPLORER
+        EXPLORER,
+        SWIMMER
 } entity_type_t;
 
 typedef struct entity {
@@ -107,6 +109,143 @@ char entity_type_t_to_char(entity_type_t entity_type) {
                 return 's';
         case EXPLORER:
                 return 'e';
+        case SWIMMER:
+                return 'm';
+        }
+}
+
+int get_land_cost_pc(land_t type) {
+        switch (type) {
+        case EMPTY:
+                return -1;
+        case BOULDER:
+                return -1;
+        case ROAD:
+                return 10;
+        case POKEMART:
+                return 10;
+        case POKEMON_CENTER:
+                return 10;
+        case TALL_GRASS:
+                return 20;
+        case SHORT_GRASS:
+                return 10;
+        case MOUNTAIN:
+                return -1;
+        case FOREST:
+                return -1;
+        case WATER:
+                return -1;
+        case GATE:
+                return 10;
+        }
+}
+
+int get_land_cost_hiker(land_t type) {
+        switch (type) {
+        case EMPTY:
+                return -1;
+        case BOULDER:
+                return -1;
+        case ROAD:
+                return 10;
+        case POKEMART:
+                return 50;
+        case POKEMON_CENTER:
+                return 50;
+        case TALL_GRASS:
+                return 15;
+        case SHORT_GRASS:
+                return 10;
+        case MOUNTAIN:
+                return 15;
+        case FOREST:
+                return -1;
+        case WATER:
+                return -1;
+        case GATE:
+                return -1;
+        }
+}
+
+int get_land_cost_rival(land_t type) {
+        switch (type) {
+        case EMPTY:
+                return -1;
+        case BOULDER:
+                return -1;
+        case ROAD:
+                return 10;
+        case POKEMART:
+                return 50;
+        case POKEMON_CENTER:
+                return 50;
+        case TALL_GRASS:
+                return 20;
+        case SHORT_GRASS:
+                return 10;
+        case MOUNTAIN:
+                return -1;
+        case FOREST:
+                return -1;
+        case WATER:
+                return -1;
+        case GATE:
+                return -1;
+        }
+}
+
+int get_land_cost_swimmer(land_t type) {
+        switch (type) {
+        case EMPTY:
+                return -1;
+        case BOULDER:
+                return -1;
+        case ROAD:
+                return -1;
+        case POKEMART:
+                return -1;
+        case POKEMON_CENTER:
+                return -1;
+        case TALL_GRASS:
+                return -1;
+        case SHORT_GRASS:
+                return -1;
+        case MOUNTAIN:
+                return -1;
+        case FOREST:
+                return -1;
+        case WATER:
+                return 7;
+        case GATE:
+                return -1;
+        }
+}
+
+int get_land_cost_other(land_t type) {
+        switch (type) {
+        case EMPTY:
+                return -1;
+        case BOULDER:
+                return -1;
+        case ROAD:
+                return 10;
+        case POKEMART:
+                return 50;
+        case POKEMON_CENTER:
+                return 50;
+        case TALL_GRASS:
+                return 20;
+        case SHORT_GRASS:
+                return 10;
+        case MOUNTAIN:
+                return -1;
+        case FOREST:
+                return -1;
+        case WATER:
+                return -1;
+        case GATE:
+                return -1;
         }
 }
 
@@ -281,13 +420,13 @@ int place_boulders(land_t terrain[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT]) {
         return 0;
 }
 
-int get_terrain_cost(char type) {
+int pathfinding_terrain_cost(char type) {
         switch (type) {
         case SHORT_GRASS:
                 return 10;
         case TALL_GRASS:
                 return 15;
-        case BOULDER:
+        case MOUNTAIN:
                 return 70;
         case WATER:
                 return 100;
@@ -315,7 +454,7 @@ void generate_path_explore_neighbor(
                 return;
         }
 
-        int terrain_cost = get_terrain_cost(terrain[new_c.x][new_c.y]);
+        int terrain_cost = pathfinding_terrain_cost(terrain[new_c.x][new_c.y]);
 
         int new_d = d + terrain_cost;
 
@@ -641,58 +780,50 @@ int get_gate_coordinates(chunk_t *world[WORLD_SIZE][WORLD_SIZE], cord_t chunk,
         }
 }
 
-int get_land_cost_hiker(land_t type) {
-        switch (type) {
-        case EMPTY:
-                return -1;
-        case BOULDER:
-                return -1;
-        case ROAD:
-                return 10;
-        case POKEMART:
-                return 50;
-        case POKEMON_CENTER:
-                return 50;
-        case TALL_GRASS:
-                return 15;
-        case SHORT_GRASS:
-                return 10;
-        case MOUNTAIN:
-                return 15;
-        case FOREST:
-                return -1;
-        case WATER:
-                return -1;
-        case GATE:
-                return -1;
-        }
-}
+int spawn_entities(chunk_t *chunk, int num_trainers) {
+        // Player is an entity -> |entities| = numtrainers + 1
+        chunk->num_entities = num_trainers + 1;
 
-int get_land_cost_rival(land_t type) {
-        switch (type) {
-        case EMPTY:
-                return -1;
-        case BOULDER:
-                return -1;
-        case ROAD:
-                return 10;
-        case POKEMART:
-                return 50;
-        case POKEMON_CENTER:
-                return 50;
-        case TALL_GRASS:
-                return 20;
-        case SHORT_GRASS:
-                return 10;
-        case MOUNTAIN:
-                return -1;
-        case FOREST:
-                return -1;
-        case WATER:
-                return -1;
-        case GATE:
-                return -1;
+        void *e = malloc((chunk->num_entities) * sizeof(entity_t));
+        chunk->entities = e;
+
+        for (int i = 0; i < chunk->num_entities; i++) {
+                chunk->entities[i] = (entity_t){0};
         }
+
+        cord_t pc_cord;
+        do {
+                pc_cord.x = rand() % (CHUNK_X_WIDTH - 2) + 1;
+                pc_cord.y = rand() % (CHUNK_Y_HEIGHT - 2) + 1;
+        } while (chunk->terrain[pc_cord.x][pc_cord.y] != ROAD);
+
+        chunk->entities[0] = (entity_t){PC, pc_cord, 0};
+
+        if (chunk->num_entities == 1)
+                return 0;
+
+        cord_t hiker_cord;
+        do {
+                hiker_cord.x = rand() % (CHUNK_X_WIDTH - 2) + 1;
+                hiker_cord.y = rand() % (CHUNK_Y_HEIGHT - 2) + 1;
+        } while (get_land_cost_hiker(
+                     chunk->terrain[hiker_cord.x][hiker_cord.y]) == -1);
+
+        chunk->entities[1] = (entity_t){HIKER, hiker_cord, 0};
+
+        if (chunk->num_entities == 2)
+                return 0;
+
+        cord_t rival_cord;
+        do {
+                rival_cord.x = rand() % (CHUNK_X_WIDTH - 2) + 1;
+                rival_cord.y = rand() % (CHUNK_Y_HEIGHT - 2) + 1;
+        } while (get_land_cost_rival(
+                     chunk->terrain[rival_cord.x][rival_cord.y]) == -1);
+
+        chunk->entities[2] = (entity_t){RIVAL, rival_cord, 0};
+
+        return 0;
 }
 
 int create_chunk_if_not_exists(chunk_t *world[WORLD_SIZE][WORLD_SIZE],
@@ -736,26 +867,7 @@ int create_chunk_if_not_exists(chunk_t *world[WORLD_SIZE][WORLD_SIZE],
 
         generate_terrain(chunk, place_poke_center, place_pokemart);
 
-        // Player is an entity -> |entities| = numtrainers + 1
-        chunk->num_entities = num_trainers + 1;
-
-        void *e = malloc((chunk->num_entities) * sizeof(entity_t));
-        chunk->entities = e;
-
-        for (int i = 0; i < chunk->num_entities; i++) {
-                chunk->entities[i] = (entity_t){0};
-        }
-
-        // First slot is player
-        cord_t pc_cord;
-        do {
-                pc_cord.x = rand() % (CHUNK_X_WIDTH - 2) + 1;
-                pc_cord.y = rand() % (CHUNK_Y_HEIGHT - 2) + 1;
-        } while (chunk->terrain[pc_cord.x][pc_cord.y] != ROAD);
-
-        chunk->entities[0] = (entity_t){PC, pc_cord, 0};
-
-        // todo initialize entities
+        spawn_entities(chunk, num_trainers);
 
         world[cur_chunk.x][cur_chunk.y] = chunk;
 
