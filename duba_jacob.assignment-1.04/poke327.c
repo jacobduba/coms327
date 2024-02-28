@@ -43,6 +43,7 @@ typedef enum terrain {
 typedef enum direction { NORTH, SOUTH, EAST, WEST } dir_t;
 
 typedef enum entity_type {
+        NO_ENTITY,
         PC,
         HIKER,
         RIVAL,
@@ -53,17 +54,12 @@ typedef enum entity_type {
         SWIMMER
 } entity_type_t;
 
-typedef struct entity {
-        char type;
-        cord_t pos;
-        int gt; // Next turn
-} entity_t;
+#define NUM_TRAINER_TYPES 7
 
 typedef struct chunk {
         land_t terrain[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT];
         int n_gate_x, s_gate_x, e_gate_y, w_gate_y;
-        entity_t *entities;
-        int num_entities;
+        entity_type_t entities[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT];
 } chunk_t;
 
 char land_t_to_char(land_t land) {
@@ -95,6 +91,8 @@ char land_t_to_char(land_t land) {
 
 char entity_type_t_to_char(entity_type_t entity_type) {
         switch (entity_type) {
+        case NO_ENTITY:
+                return 'E';
         case PC:
                 return '@';
         case HIKER:
@@ -254,13 +252,8 @@ int get_land_cost_other(land_t type) {
  * Else return land at the pos.
  */
 char get_char_for_pos(cord_t pos, chunk_t *chunk) {
-        // TODO change loop into map?
-        for (int i = 0; i < chunk->num_entities; i++) {
-                entity_t entity = chunk->entities[i];
-                cord_t entity_pos = entity.pos;
-                if (entity_pos.y == pos.y && entity_pos.x == pos.x) {
-                        return entity_type_t_to_char(entity.type);
-                }
+        if (chunk->entities[pos.x][pos.y] != NO_ENTITY) {
+                return entity_type_t_to_char(chunk->entities[pos.x][pos.y]);
         }
 
         return land_t_to_char(chunk->terrain[pos.x][pos.y]);
@@ -780,48 +773,76 @@ int get_gate_coordinates(chunk_t *world[WORLD_SIZE][WORLD_SIZE], cord_t chunk,
         }
 }
 
-int spawn_entities(chunk_t *chunk, int num_trainers) {
-        // Player is an entity -> |entities| = numtrainers + 1
-        chunk->num_entities = num_trainers + 1;
+/**
+ * Picks a random tile without another entity and where get_land_cost(land_t) !=
+ * -1.
+ */
+void spawn_entity(chunk_t *chunk, entity_type_t entity,
+                  int (*get_land_cost)(land_t)) {
+        cord_t cord;
+        do {
+                cord.x = rand() % (CHUNK_X_WIDTH - 2) + 1;
+                cord.y = rand() % (CHUNK_Y_HEIGHT - 2) + 1;
+        } while (chunk->terrain[cord.x][cord.y] != NO_ENTITY &&
+                 get_land_cost(chunk->terrain[cord.x][cord.y]) == -1);
 
-        void *e = malloc((chunk->num_entities) * sizeof(entity_t));
-        chunk->entities = e;
+        chunk->entities[cord.x][cord.y] = entity;
+}
 
-        for (int i = 0; i < chunk->num_entities; i++) {
-                chunk->entities[i] = (entity_t){0};
+int return_negative_one_if_not_road(land_t land) {
+        if (land != ROAD) {
+                return -1;
         }
 
-        cord_t pc_cord;
-        do {
-                pc_cord.x = rand() % (CHUNK_X_WIDTH - 2) + 1;
-                pc_cord.y = rand() % (CHUNK_Y_HEIGHT - 2) + 1;
-        } while (chunk->terrain[pc_cord.x][pc_cord.y] != ROAD);
+        return 0;
+}
 
-        chunk->entities[0] = (entity_t){PC, pc_cord, 0};
+int spawn_entities(chunk_t *chunk, int num_trainers) {
+        for (int y = 0; y < CHUNK_Y_HEIGHT; y++) {
+                for (int x = 0; x < CHUNK_X_WIDTH; x++) {
+                        chunk->entities[x][y] = NO_ENTITY;
+                }
+        }
 
-        if (chunk->num_entities == 1)
+        spawn_entity(chunk, PC, return_negative_one_if_not_road);
+
+        if (num_trainers < 1)
                 return 0;
 
-        cord_t hiker_cord;
-        do {
-                hiker_cord.x = rand() % (CHUNK_X_WIDTH - 2) + 1;
-                hiker_cord.y = rand() % (CHUNK_Y_HEIGHT - 2) + 1;
-        } while (get_land_cost_hiker(
-                     chunk->terrain[hiker_cord.x][hiker_cord.y]) == -1);
+        spawn_entity(chunk, HIKER, get_land_cost_hiker);
 
-        chunk->entities[1] = (entity_t){HIKER, hiker_cord, 0};
-
-        if (chunk->num_entities == 2)
+        if (num_trainers < 2)
                 return 0;
 
-        cord_t rival_cord;
-        do {
-                rival_cord.x = rand() % (CHUNK_X_WIDTH - 2) + 1;
-                rival_cord.y = rand() % (CHUNK_Y_HEIGHT - 2) + 1;
-        } while (get_land_cost_rival(
-                     chunk->terrain[rival_cord.x][rival_cord.y]) == -1);
+        spawn_entity(chunk, RIVAL, get_land_cost_rival);
 
-        chunk->entities[2] = (entity_t){RIVAL, rival_cord, 0};
+        int entity_type;
+        for (int i = 2; i < num_trainers; i++) {
+                entity_type = rand() % NUM_TRAINER_TYPES;
+                switch (entity_type) {
+                case 0:
+                        spawn_entity(chunk, HIKER, get_land_cost_hiker);
+                        break;
+                case 1:
+                        spawn_entity(chunk, RIVAL, get_land_cost_rival);
+                        break;
+                case 2:
+                        spawn_entity(chunk, PACER, get_land_cost_other);
+                        break;
+                case 3:
+                        spawn_entity(chunk, WANDERER, get_land_cost_other);
+                        break;
+                case 4:
+                        spawn_entity(chunk, SENTRY, get_land_cost_other);
+                        break;
+                case 5:
+                        spawn_entity(chunk, EXPLORER, get_land_cost_other);
+                        break;
+                case 6:
+                        spawn_entity(chunk, SWIMMER, get_land_cost_swimmer);
+                        break;
+                }
+        }
 
         return 0;
 }
@@ -971,7 +992,7 @@ int main(int argc, char *argv[]) {
         int hiker_dist[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT];
         int rival_dist[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT];
 
-        int numtrainers = DEFAULT_NUMTRAINERS;
+        int num_trainers = DEFAULT_NUMTRAINERS;
 
         int opt;
         int option_index = 0;
@@ -990,8 +1011,8 @@ int main(int argc, char *argv[]) {
                                   &option_index)) != -1) {
                 switch (opt) {
                 case 'n':
-                        numtrainers = atoi(optarg);
-                        printf("numtrainers=%d\n", numtrainers);
+                        num_trainers = atoi(optarg);
+                        printf("num_entities=%d\n", num_trainers);
                         break;
                 case ':':
                         fprintf(stderr, "Option -%c requires an argument.\n",
@@ -1016,7 +1037,7 @@ int main(int argc, char *argv[]) {
         cur_chunk.x = 200;
         cur_chunk.y = 200;
 
-        create_chunk_if_not_exists(world, cur_chunk, numtrainers);
+        create_chunk_if_not_exists(world, cur_chunk, num_trainers);
 
         print_chunk(world[cur_chunk.x][cur_chunk.y]);
 
