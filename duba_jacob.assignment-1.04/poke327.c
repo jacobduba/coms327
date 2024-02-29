@@ -40,7 +40,25 @@ typedef enum terrain {
         POKEMART
 } land_t;
 
-typedef enum direction { NORTH, SOUTH, EAST, WEST } dir_t;
+typedef enum gate_dir {
+        NORTH_GATE,
+        WEST_GATE,
+        EAST_GATE,
+        SOUTH_GATE,
+} gate_dir_t;
+
+typedef enum dir {
+        NORTH_EAST,
+        NORTH,
+        NORTH_WEST,
+        WEST,
+        EAST,
+        SOUTH_EAST,
+        SOUTH,
+        SOUTH_WEST
+} dir_t;
+
+#define NUM_DIRECTIONS 8
 
 typedef enum entity_type {
         NO_ENTITY,
@@ -51,10 +69,15 @@ typedef enum entity_type {
         WANDERER,
         SENTRY,
         EXPLORER,
-        SWIMMER
+        // SWIMMER
 } entity_type_t;
 
-#define NUM_TRAINER_TYPES 7
+typedef struct entity {
+        entity_type_t entity_type;
+        void *data;
+} entity_t;
+
+#define NUM_TRAINER_TYPES 6
 
 typedef struct event {
         // int seq_number;
@@ -65,7 +88,7 @@ typedef struct chunk {
         land_t terrain[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT];
         int n_gate_x, s_gate_x, e_gate_y,
             w_gate_y; // TODO move out. Will never be used
-        entity_type_t entities[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT];
+        entity_t entities[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT];
         struct sc_heap *event_queue;
         cord_t pc_pos;
 } chunk_t;
@@ -115,8 +138,8 @@ char entity_type_t_to_char(entity_type_t entity_type) {
                 return 's';
         case EXPLORER:
                 return 'e';
-        case SWIMMER:
-                return 'm';
+                // case SWIMMER:
+                //         return 'm';
         }
 }
 
@@ -201,32 +224,32 @@ int get_land_cost_rival(land_t type) {
         }
 }
 
-int get_land_cost_swimmer(land_t type) {
-        switch (type) {
-        case EMPTY:
-                return -1;
-        case BOULDER:
-                return -1;
-        case ROAD:
-                return -1;
-        case POKEMART:
-                return -1;
-        case POKEMON_CENTER:
-                return -1;
-        case TALL_GRASS:
-                return -1;
-        case SHORT_GRASS:
-                return -1;
-        case MOUNTAIN:
-                return -1;
-        case FOREST:
-                return -1;
-        case WATER:
-                return 7;
-        case GATE:
-                return -1;
-        }
-}
+// int get_land_cost_swimmer(land_t type) {
+//         switch (type) {
+//         case EMPTY:
+//                 return -1;
+//         case BOULDER:
+//                 return -1;
+//         case ROAD:
+//                 return -1;
+//         case POKEMART:
+//                 return -1;
+//         case POKEMON_CENTER:
+//                 return -1;
+//         case TALL_GRASS:
+//                 return -1;
+//         case SHORT_GRASS:
+//                 return -1;
+//         case MOUNTAIN:
+//                 return -1;
+//         case FOREST:
+//                 return -1;
+//         case WATER:
+//                 return 7;
+//         case GATE:
+//                 return -1;
+//         }
+// }
 
 int get_land_cost_other(land_t type) {
         switch (type) {
@@ -260,8 +283,9 @@ int get_land_cost_other(land_t type) {
  * Else return land at the pos.
  */
 char get_char_for_pos(cord_t pos, chunk_t *chunk) {
-        if (chunk->entities[pos.x][pos.y] != NO_ENTITY) {
-                return entity_type_t_to_char(chunk->entities[pos.x][pos.y]);
+        if (chunk->entities[pos.x][pos.y].entity_type != NO_ENTITY) {
+                return entity_type_t_to_char(
+                    chunk->entities[pos.x][pos.y].entity_type);
         }
 
         return land_t_to_char(chunk->terrain[pos.x][pos.y]);
@@ -746,7 +770,7 @@ int generate_terrain(chunk_t *chunk, int place_pokemon_center,
  * If cords are invalid, return -1.
  */
 int get_gate_coordinates(chunk_t *world[WORLD_SIZE][WORLD_SIZE], cord_t chunk,
-                         dir_t direction) {
+                         gate_dir_t direction) {
         int range;
 
         if (chunk.x < 0 || WORLD_SIZE - 1 < chunk.x || chunk.y < 0 ||
@@ -755,12 +779,12 @@ int get_gate_coordinates(chunk_t *world[WORLD_SIZE][WORLD_SIZE], cord_t chunk,
         }
 
         switch (direction) {
-        case NORTH:
-        case SOUTH:
+        case NORTH_GATE:
+        case SOUTH_GATE:
                 range = CHUNK_X_WIDTH;
                 break;
-        case WEST:
-        case EAST:
+        case WEST_GATE:
+        case EAST_GATE:
                 range = CHUNK_Y_HEIGHT;
                 break;
         }
@@ -770,13 +794,13 @@ int get_gate_coordinates(chunk_t *world[WORLD_SIZE][WORLD_SIZE], cord_t chunk,
         }
 
         switch (direction) {
-        case NORTH:
+        case NORTH_GATE:
                 return world[chunk.x][chunk.y]->n_gate_x;
-        case SOUTH:
+        case SOUTH_GATE:
                 return world[chunk.x][chunk.y]->s_gate_x;
-        case WEST:
+        case WEST_GATE:
                 return world[chunk.x][chunk.y]->w_gate_y;
-        case EAST:
+        case EAST_GATE:
                 return world[chunk.x][chunk.y]->e_gate_y;
         }
 }
@@ -786,15 +810,24 @@ int get_gate_coordinates(chunk_t *world[WORLD_SIZE][WORLD_SIZE], cord_t chunk,
  * -1.
  * Returns position entity was spawned at.
  */
-cord_t spawn_entity(chunk_t *chunk, entity_type_t entity,
+cord_t spawn_entity(chunk_t *chunk, entity_type_t entity_type,
                     int (*get_land_cost)(land_t), int *seq_number) {
         cord_t cord;
         do {
                 cord.x = rand() % (CHUNK_X_WIDTH - 2) + 1;
                 cord.y = rand() % (CHUNK_Y_HEIGHT - 2) + 1;
-        } while (chunk->terrain[cord.x][cord.y] != NO_ENTITY &&
+        } while (chunk->entities[cord.x][cord.y].entity_type != NO_ENTITY ||
                  get_land_cost(chunk->terrain[cord.x][cord.y]) == -1);
 
+        entity_t entity;
+        entity.entity_type = entity_type;
+
+        if (entity_type == WANDERER || entity_type == PACER ||
+            entity_type == EXPLORER) {
+                entity.data = malloc(sizeof(dir_t));
+                dir_t random_dir = rand() % NUM_DIRECTIONS;
+                *((dir_t *)entity.data) = random_dir;
+        }
         chunk->entities[cord.x][cord.y] = entity;
 
         event_t *event = malloc(sizeof(event_t));
@@ -821,7 +854,7 @@ int spawn_entities(chunk_t *chunk, int num_trainers) {
 
         for (int y = 0; y < CHUNK_Y_HEIGHT; y++) {
                 for (int x = 0; x < CHUNK_X_WIDTH; x++) {
-                        chunk->entities[x][y] = NO_ENTITY;
+                        chunk->entities[x][y] = (entity_t){NO_ENTITY, NULL};
                 }
         }
 
@@ -867,10 +900,11 @@ int spawn_entities(chunk_t *chunk, int num_trainers) {
                         spawn_entity(chunk, EXPLORER, get_land_cost_other,
                                      &entity_count);
                         break;
-                case 6:
-                        spawn_entity(chunk, SWIMMER, get_land_cost_swimmer,
-                                     &entity_count);
-                        break;
+                        // case 6:
+                        //         spawn_entity(chunk, SWIMMER,
+                        //         get_land_cost_swimmer,
+                        //                      &entity_count);
+                        //         break;
                 }
         }
 
@@ -893,13 +927,13 @@ int create_chunk_if_not_exists(chunk_t *world[WORLD_SIZE][WORLD_SIZE],
         chunk = malloc(sizeof(chunk_t));
 
         chunk->w_gate_y = get_gate_coordinates(
-            world, (cord_t){cur_chunk.x - 1, cur_chunk.y}, EAST);
+            world, (cord_t){cur_chunk.x - 1, cur_chunk.y}, EAST_GATE);
         chunk->e_gate_y = get_gate_coordinates(
-            world, (cord_t){cur_chunk.x + 1, cur_chunk.y}, WEST);
+            world, (cord_t){cur_chunk.x + 1, cur_chunk.y}, WEST_GATE);
         chunk->n_gate_x = get_gate_coordinates(
-            world, (cord_t){cur_chunk.x, cur_chunk.y - 1}, SOUTH);
+            world, (cord_t){cur_chunk.x, cur_chunk.y - 1}, SOUTH_GATE);
         chunk->s_gate_x = get_gate_coordinates(
-            world, (cord_t){cur_chunk.x, cur_chunk.y + 1}, NORTH);
+            world, (cord_t){cur_chunk.x, cur_chunk.y + 1}, NORTH_GATE);
 
         manhatten_dist = abs(cur_chunk.x - WORLD_SIZE / 2) +
                          abs(cur_chunk.y - WORLD_SIZE / 2);
@@ -1027,8 +1061,8 @@ void explore_tile_lowest_distance(chunk_t *cur_chunk,
             *best_next_cord_dist)
                 return;
 
-        if (cur_chunk->entities[possible_next_cord.x][possible_next_cord.y] !=
-            NO_ENTITY)
+        if (cur_chunk->entities[possible_next_cord.x][possible_next_cord.y]
+                .entity_type != NO_ENTITY)
                 return;
 
         best_next_cord->x = possible_next_cord.x;
@@ -1037,10 +1071,10 @@ void explore_tile_lowest_distance(chunk_t *cur_chunk,
         *best_next_cord_dist = hiker_dist[best_next_cord->x][best_next_cord->y];
 }
 
-void move_to_lowest_dist_readd_event(
-    int hiker_dist[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT], cord_t entity_pos,
-    chunk_t *cur_chunk, int num_entities, int gt, int (*get_land_cost)(land_t),
-    entity_type_t entity_type) {
+void move_to_lowest_dist(int hiker_dist[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT],
+                         cord_t entity_pos, chunk_t *cur_chunk,
+                         int num_entities, int gt, int (*get_land_cost)(land_t),
+                         entity_type_t entity_type) {
         cord_t next_cord = entity_pos;
         int lowest_dist = INT_MAX;
 
@@ -1069,8 +1103,8 @@ void move_to_lowest_dist_readd_event(
             cur_chunk, hiker_dist, (cord_t){entity_pos.x + 1, entity_pos.y + 1},
             &lowest_dist, &next_cord);
 
-        cur_chunk->entities[entity_pos.x][entity_pos.y] = NO_ENTITY;
-        cur_chunk->entities[next_cord.x][next_cord.y] = entity_type;
+        cur_chunk->entities[entity_pos.x][entity_pos.y].entity_type = NO_ENTITY;
+        cur_chunk->entities[next_cord.x][next_cord.y].entity_type = entity_type;
 
         event_t *new_event = malloc(sizeof(event_t));
         new_event->pos = next_cord;
@@ -1083,6 +1117,155 @@ void move_to_lowest_dist_readd_event(
                             gt + cost_of_moving_to_new_cord * num_entities,
                             new_event);
         }
+}
+
+cord_t find_tile_in_direction(cord_t cur, dir_t dir) {
+        switch (dir) {
+        case NORTH_EAST:
+                return (cord_t){cur.x - 1, cur.y - 1};
+        case NORTH:
+                return (cord_t){cur.x, cur.y - 1};
+        case NORTH_WEST:
+                return (cord_t){cur.x + 1, cur.y - 1};
+        case EAST:
+                return (cord_t){cur.x - 1, cur.y};
+        case WEST:
+                return (cord_t){cur.x + 1, cur.y};
+        case SOUTH_EAST:
+                return (cord_t){cur.x - 1, cur.y + 1};
+        case SOUTH:
+                return (cord_t){cur.x, cur.y + 1};
+        case SOUTH_WEST:
+                return (cord_t){cur.x + 1, cur.y + 1};
+        }
+}
+
+dir_t opposite_direction(dir_t dir) {
+        switch (dir) {
+        case NORTH_EAST:
+                return SOUTH_WEST;
+        case NORTH:
+                return SOUTH;
+        case NORTH_WEST:
+                return SOUTH_EAST;
+        case WEST:
+                return EAST;
+        case EAST:
+                return WEST;
+        case SOUTH_EAST:
+                return NORTH_WEST;
+        case SOUTH:
+                return NORTH;
+        case SOUTH_WEST:
+                return NORTH_EAST;
+        }
+}
+
+void move_pacer(entity_t entity, cord_t entity_pos, chunk_t *cur_chunk, int gt,
+                int num_entities) {
+        dir_t *dir = (dir_t *)entity.data;
+        cord_t new_pos = find_tile_in_direction(entity_pos, *dir);
+
+        if (get_land_cost_other(cur_chunk->terrain[new_pos.x][new_pos.y]) ==
+                -1 ||
+            cur_chunk->entities[new_pos.x][new_pos.y].entity_type !=
+                NO_ENTITY) {
+                *dir = opposite_direction(*dir);
+                new_pos = find_tile_in_direction(entity_pos, *dir);
+        }
+
+        // If this happens twice, the pacer is stuck. So just don't move.
+        if (get_land_cost_other(cur_chunk->terrain[new_pos.x][new_pos.y]) ==
+                -1 ||
+            cur_chunk->entities[new_pos.x][new_pos.y].entity_type !=
+                NO_ENTITY) {
+                new_pos = entity_pos;
+        }
+
+        cur_chunk->entities[entity_pos.x][entity_pos.y] =
+            (entity_t){NO_ENTITY, NULL};
+        cur_chunk->entities[new_pos.x][new_pos.y] = (entity_t){PACER, dir};
+
+        int cost_of_moving_to_new_cord =
+            get_land_cost_other(cur_chunk->terrain[new_pos.x][new_pos.y]);
+
+        event_t *new_event = malloc(sizeof(event_t));
+        new_event->pos = new_pos;
+
+        sc_heap_add(cur_chunk->event_queue,
+                    gt + cost_of_moving_to_new_cord * num_entities, new_event);
+}
+
+void move_wanderer(entity_t entity, cord_t entity_pos, chunk_t *cur_chunk,
+                   int gt, int num_entities) {
+        dir_t *dir = (dir_t *)entity.data;
+        cord_t new_pos = find_tile_in_direction(entity_pos, *dir);
+
+        land_t new_land = cur_chunk->terrain[new_pos.x][new_pos.y];
+        land_t cur_land = cur_chunk->terrain[entity_pos.x][entity_pos.y];
+
+        // TODO replace with solution that saves wanders biome
+        if (new_land != cur_land ||
+            cur_chunk->entities[new_pos.x][new_pos.y].entity_type !=
+                NO_ENTITY) {
+                *dir = rand() % NUM_DIRECTIONS;
+                new_pos = find_tile_in_direction(entity_pos, *dir);
+        }
+
+        // Half assed solution. If new tile cannot be traversed, don't move.
+        new_land = cur_chunk->terrain[new_pos.x][new_pos.y];
+        if (new_land != cur_land ||
+            cur_chunk->entities[new_pos.x][new_pos.y].entity_type !=
+                NO_ENTITY) {
+                new_pos = entity_pos;
+        }
+
+        cur_chunk->entities[entity_pos.x][entity_pos.y] =
+            (entity_t){NO_ENTITY, NULL};
+        cur_chunk->entities[new_pos.x][new_pos.y] = (entity_t){WANDERER, dir};
+
+        int cost_of_moving_to_new_cord =
+            get_land_cost_other(cur_chunk->terrain[new_pos.x][new_pos.y]);
+
+        event_t *new_event = malloc(sizeof(event_t));
+        new_event->pos = new_pos;
+
+        sc_heap_add(cur_chunk->event_queue,
+                    gt + cost_of_moving_to_new_cord * num_entities, new_event);
+}
+
+void move_explorer(entity_t entity, cord_t entity_pos, chunk_t *cur_chunk,
+                   int gt, int num_entities) {
+        dir_t *dir = (dir_t *)entity.data;
+        cord_t new_pos = find_tile_in_direction(entity_pos, *dir);
+
+        if (get_land_cost_other(cur_chunk->terrain[new_pos.x][new_pos.y]) ==
+                -1 ||
+            cur_chunk->entities[new_pos.x][new_pos.y].entity_type !=
+                NO_ENTITY) {
+                *dir = rand() % NUM_DIRECTIONS;
+                new_pos = find_tile_in_direction(entity_pos, *dir);
+        }
+
+        if (get_land_cost_other(cur_chunk->terrain[new_pos.x][new_pos.y]) ==
+                -1 ||
+            cur_chunk->entities[new_pos.x][new_pos.y].entity_type !=
+                NO_ENTITY) {
+                new_pos = entity_pos;
+        }
+
+        cur_chunk->entities[entity_pos.x][entity_pos.y] =
+            (entity_t){NO_ENTITY, NULL};
+        cur_chunk->entities[new_pos.x][new_pos.y] = (entity_t){EXPLORER, dir};
+
+        int cost_of_moving_to_new_cord =
+            get_land_cost_other(cur_chunk->terrain[new_pos.x][new_pos.y]);
+
+        event_t *new_event = malloc(sizeof(event_t));
+        new_event->pos = new_pos;
+
+        sc_heap_add(cur_chunk->event_queue,
+                    gt + cost_of_moving_to_new_cord * num_entities, new_event);
 }
 
 int main(int argc, char *argv[]) {
@@ -1127,6 +1310,7 @@ int main(int argc, char *argv[]) {
         }
 
         seed = time(NULL);
+        // seed = 1709193713;
         printf("Using seed: %d\n", seed);
         srand(seed);
 
@@ -1157,37 +1341,44 @@ int main(int argc, char *argv[]) {
 
                         event_t event = *(event_t *)data->data;
                         cord_t entity_pos = event.pos;
-                        entity_type_t entity =
+                        entity_t entity =
                             cur_chunk->entities[entity_pos.x][entity_pos.y];
 
-                        printf("%d at cords (%d, %d)\n", entity, entity_pos.x,
-                               entity_pos.y);
+                        // printf("%d at cords (%d, %d)\n", entity,
+                        // entity_pos.x, entity_pos.y);
 
-                        event_t *new_event;
-
-                        switch (entity) {
+                        switch (entity.entity_type) {
                         case PC:
                                 print_chunk(cur_chunk);
                                 usleep(250000);
-                                // Wait 10 ticks
 
-                                new_event = malloc(sizeof(event_t));
+                                event_t *new_event = malloc(sizeof(event_t));
                                 new_event->pos = entity_pos;
 
                                 sc_heap_add(cur_chunk->event_queue,
                                             gt + num_entities * 10, new_event);
                                 break;
                         case HIKER:
-                                move_to_lowest_dist_readd_event(
-                                    hiker_dist, entity_pos, cur_chunk,
-                                    num_entities, gt, get_land_cost_hiker,
-                                    HIKER);
+                                move_to_lowest_dist(hiker_dist, entity_pos,
+                                                    cur_chunk, num_entities, gt,
+                                                    get_land_cost_hiker, HIKER);
                                 break;
                         case RIVAL:
-                                move_to_lowest_dist_readd_event(
-                                    rival_dist, entity_pos, cur_chunk,
-                                    num_entities, gt, get_land_cost_rival,
-                                    RIVAL);
+                                move_to_lowest_dist(rival_dist, entity_pos,
+                                                    cur_chunk, num_entities, gt,
+                                                    get_land_cost_rival, RIVAL);
+                                break;
+                        case PACER:
+                                move_pacer(entity, entity_pos, cur_chunk, gt,
+                                           num_entities);
+                                break;
+                        case WANDERER:
+                                move_wanderer(entity, entity_pos, cur_chunk, gt,
+                                              num_entities);
+                                break;
+                        case EXPLORER:
+                                move_explorer(entity, entity_pos, cur_chunk, gt,
+                                              num_entities);
                                 break;
                         default:
                                 break;
