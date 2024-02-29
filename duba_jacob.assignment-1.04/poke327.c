@@ -1,5 +1,4 @@
 #include "sc_heap.h"
-#include <c++/13/variant>
 #include <getopt.h>
 #include <limits.h>
 #include <linux/limits.h>
@@ -7,6 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <unistd.h>
 
 // Length and height for the world
 #define WORLD_SIZE 401
@@ -56,10 +56,18 @@ typedef enum entity_type {
 
 #define NUM_TRAINER_TYPES 7
 
+typedef struct event {
+        // int seq_number;
+        cord_t pos;
+} event_t;
+
 typedef struct chunk {
         land_t terrain[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT];
-        int n_gate_x, s_gate_x, e_gate_y, w_gate_y;
+        int n_gate_x, s_gate_x, e_gate_y,
+            w_gate_y; // TODO move out. Will never be used
         entity_type_t entities[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT];
+        struct sc_heap *event_queue;
+        cord_t pc_pos;
 } chunk_t;
 
 char land_t_to_char(land_t land) {
@@ -776,9 +784,10 @@ int get_gate_coordinates(chunk_t *world[WORLD_SIZE][WORLD_SIZE], cord_t chunk,
 /**
  * Picks a random tile without another entity and where get_land_cost(land_t) !=
  * -1.
+ * Returns position entity was spawned at.
  */
-void spawn_entity(chunk_t *chunk, entity_type_t entity,
-                  int (*get_land_cost)(land_t)) {
+cord_t spawn_entity(chunk_t *chunk, entity_type_t entity,
+                    int (*get_land_cost)(land_t), int *seq_number) {
         cord_t cord;
         do {
                 cord.x = rand() % (CHUNK_X_WIDTH - 2) + 1;
@@ -787,6 +796,16 @@ void spawn_entity(chunk_t *chunk, entity_type_t entity,
                  get_land_cost(chunk->terrain[cord.x][cord.y]) == -1);
 
         chunk->entities[cord.x][cord.y] = entity;
+
+        event_t *event = malloc(sizeof(event_t));
+        event->pos = cord;
+        // event->seq_number = *seq_number;
+
+        sc_heap_add(chunk->event_queue, *seq_number, event);
+
+        (*seq_number)++;
+
+        return cord;
 }
 
 int return_negative_one_if_not_road(land_t land) {
@@ -798,48 +817,59 @@ int return_negative_one_if_not_road(land_t land) {
 }
 
 int spawn_entities(chunk_t *chunk, int num_trainers) {
+        int entity_count = 0;
+
         for (int y = 0; y < CHUNK_Y_HEIGHT; y++) {
                 for (int x = 0; x < CHUNK_X_WIDTH; x++) {
                         chunk->entities[x][y] = NO_ENTITY;
                 }
         }
 
-        spawn_entity(chunk, PC, return_negative_one_if_not_road);
+        cord_t pc_pos = spawn_entity(chunk, PC, return_negative_one_if_not_road,
+                                     &entity_count);
+        chunk->pc_pos = pc_pos;
 
         if (num_trainers < 1)
                 return 0;
 
-        spawn_entity(chunk, HIKER, get_land_cost_hiker);
+        spawn_entity(chunk, HIKER, get_land_cost_hiker, &entity_count);
 
         if (num_trainers < 2)
                 return 0;
 
-        spawn_entity(chunk, RIVAL, get_land_cost_rival);
+        spawn_entity(chunk, RIVAL, get_land_cost_rival, &entity_count);
 
         int entity_type;
         for (int i = 2; i < num_trainers; i++) {
                 entity_type = rand() % NUM_TRAINER_TYPES;
                 switch (entity_type) {
                 case 0:
-                        spawn_entity(chunk, HIKER, get_land_cost_hiker);
+                        spawn_entity(chunk, HIKER, get_land_cost_hiker,
+                                     &entity_count);
                         break;
                 case 1:
-                        spawn_entity(chunk, RIVAL, get_land_cost_rival);
+                        spawn_entity(chunk, RIVAL, get_land_cost_rival,
+                                     &entity_count);
                         break;
                 case 2:
-                        spawn_entity(chunk, PACER, get_land_cost_other);
+                        spawn_entity(chunk, PACER, get_land_cost_other,
+                                     &entity_count);
                         break;
                 case 3:
-                        spawn_entity(chunk, WANDERER, get_land_cost_other);
+                        spawn_entity(chunk, WANDERER, get_land_cost_other,
+                                     &entity_count);
                         break;
                 case 4:
-                        spawn_entity(chunk, SENTRY, get_land_cost_other);
+                        spawn_entity(chunk, SENTRY, get_land_cost_other,
+                                     &entity_count);
                         break;
                 case 5:
-                        spawn_entity(chunk, EXPLORER, get_land_cost_other);
+                        spawn_entity(chunk, EXPLORER, get_land_cost_other,
+                                     &entity_count);
                         break;
                 case 6:
-                        spawn_entity(chunk, SWIMMER, get_land_cost_swimmer);
+                        spawn_entity(chunk, SWIMMER, get_land_cost_swimmer,
+                                     &entity_count);
                         break;
                 }
         }
@@ -854,6 +884,7 @@ int create_chunk_if_not_exists(chunk_t *world[WORLD_SIZE][WORLD_SIZE],
         int n_gate_x, s_gate_x, w_gate_y, e_gate_y;
         int place_poke_center, place_pokemart;
         int prob_of_building;
+        const int num_entities = num_trainers + 1;
 
         if (world[cur_chunk.x][cur_chunk.y]) {
                 return 1;
@@ -888,6 +919,9 @@ int create_chunk_if_not_exists(chunk_t *world[WORLD_SIZE][WORLD_SIZE],
 
         generate_terrain(chunk, place_poke_center, place_pokemart);
 
+        chunk->event_queue = malloc(sizeof(struct sc_heap));
+        sc_heap_init(chunk->event_queue, num_entities);
+
         spawn_entities(chunk, num_trainers);
 
         world[cur_chunk.x][cur_chunk.y] = chunk;
@@ -919,8 +953,7 @@ void generate_dist_map_explore(struct sc_heap *heap,
 }
 
 void generate_distance_map(int dist_map[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT],
-                           land_t terrain[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT],
-                           cord_t pc, int (*get_land_cost)(land_t type)) {
+                           chunk_t *chunk, int (*get_land_cost)(land_t type)) {
         for (int x = 0; x < CHUNK_X_WIDTH; x++) {
                 for (int y = 0; y < CHUNK_Y_HEIGHT; y++) {
                         dist_map[x][y] = INT_MAX;
@@ -931,6 +964,8 @@ void generate_distance_map(int dist_map[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT],
         struct sc_heap_data *elem;
 
         sc_heap_init(&heap, CHUNK_X_WIDTH * CHUNK_Y_HEIGHT);
+
+        cord_t pc = chunk->pc_pos;
 
         sc_heap_add(&heap, 0, &pc);
         dist_map[pc.x][pc.y] = 0;
@@ -956,30 +991,97 @@ void generate_distance_map(int dist_map[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT],
 
                 int cur_cost = dist_map[x][y];
 
-                generate_dist_map_explore(&heap, terrain, dist_map,
+                generate_dist_map_explore(&heap, chunk->terrain, dist_map,
                                           (cord_t){x - 1, y - 1}, cur_cost,
                                           get_land_cost);
-                generate_dist_map_explore(&heap, terrain, dist_map,
+                generate_dist_map_explore(&heap, chunk->terrain, dist_map,
                                           (cord_t){x, y - 1}, cur_cost,
                                           get_land_cost);
-                generate_dist_map_explore(&heap, terrain, dist_map,
+                generate_dist_map_explore(&heap, chunk->terrain, dist_map,
                                           (cord_t){x + 1, y - 1}, cur_cost,
                                           get_land_cost);
-                generate_dist_map_explore(&heap, terrain, dist_map,
+                generate_dist_map_explore(&heap, chunk->terrain, dist_map,
                                           (cord_t){x - 1, y}, cur_cost,
                                           get_land_cost);
-                generate_dist_map_explore(&heap, terrain, dist_map,
+                generate_dist_map_explore(&heap, chunk->terrain, dist_map,
                                           (cord_t){x + 1, y}, cur_cost,
                                           get_land_cost);
-                generate_dist_map_explore(&heap, terrain, dist_map,
+                generate_dist_map_explore(&heap, chunk->terrain, dist_map,
                                           (cord_t){x - 1, y + 1}, cur_cost,
                                           get_land_cost);
-                generate_dist_map_explore(&heap, terrain, dist_map,
+                generate_dist_map_explore(&heap, chunk->terrain, dist_map,
                                           (cord_t){x, y + 1}, cur_cost,
                                           get_land_cost);
-                generate_dist_map_explore(&heap, terrain, dist_map,
+                generate_dist_map_explore(&heap, chunk->terrain, dist_map,
                                           (cord_t){x + 1, y + 1}, cur_cost,
                                           get_land_cost);
+        }
+}
+
+void explore_tile_lowest_distance(chunk_t *cur_chunk,
+                                  int hiker_dist[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT],
+                                  cord_t possible_next_cord,
+                                  int *best_next_cord_dist,
+                                  cord_t *best_next_cord) {
+        if (hiker_dist[possible_next_cord.x][possible_next_cord.y] >=
+            *best_next_cord_dist)
+                return;
+
+        if (cur_chunk->entities[possible_next_cord.x][possible_next_cord.y] !=
+            NO_ENTITY)
+                return;
+
+        best_next_cord->x = possible_next_cord.x;
+        best_next_cord->y = possible_next_cord.y;
+
+        *best_next_cord_dist = hiker_dist[best_next_cord->x][best_next_cord->y];
+}
+
+void move_to_lowest_dist_readd_event(
+    int hiker_dist[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT], cord_t entity_pos,
+    chunk_t *cur_chunk, int num_entities, int gt, int (*get_land_cost)(land_t),
+    entity_type_t entity_type) {
+        cord_t next_cord = entity_pos;
+        int lowest_dist = INT_MAX;
+
+        explore_tile_lowest_distance(
+            cur_chunk, hiker_dist, (cord_t){entity_pos.x - 1, entity_pos.y - 1},
+            &lowest_dist, &next_cord);
+        explore_tile_lowest_distance(cur_chunk, hiker_dist,
+                                     (cord_t){entity_pos.x, entity_pos.y - 1},
+                                     &lowest_dist, &next_cord);
+        explore_tile_lowest_distance(
+            cur_chunk, hiker_dist, (cord_t){entity_pos.x + 1, entity_pos.y - 1},
+            &lowest_dist, &next_cord);
+        explore_tile_lowest_distance(cur_chunk, hiker_dist,
+                                     (cord_t){entity_pos.x - 1, entity_pos.y},
+                                     &lowest_dist, &next_cord);
+        explore_tile_lowest_distance(cur_chunk, hiker_dist,
+                                     (cord_t){entity_pos.x + 1, entity_pos.y},
+                                     &lowest_dist, &next_cord);
+        explore_tile_lowest_distance(
+            cur_chunk, hiker_dist, (cord_t){entity_pos.x - 1, entity_pos.y + 1},
+            &lowest_dist, &next_cord);
+        explore_tile_lowest_distance(cur_chunk, hiker_dist,
+                                     (cord_t){entity_pos.x, entity_pos.y + 1},
+                                     &lowest_dist, &next_cord);
+        explore_tile_lowest_distance(
+            cur_chunk, hiker_dist, (cord_t){entity_pos.x + 1, entity_pos.y + 1},
+            &lowest_dist, &next_cord);
+
+        cur_chunk->entities[entity_pos.x][entity_pos.y] = NO_ENTITY;
+        cur_chunk->entities[next_cord.x][next_cord.y] = entity_type;
+
+        event_t *new_event = malloc(sizeof(event_t));
+        new_event->pos = next_cord;
+
+        int cost_of_moving_to_new_cord =
+            get_land_cost(cur_chunk->terrain[next_cord.x][next_cord.y]);
+
+        if (lowest_dist != INT_MAX) {
+                sc_heap_add(cur_chunk->event_queue,
+                            gt + cost_of_moving_to_new_cord * num_entities,
+                            new_event);
         }
 }
 
@@ -987,7 +1089,7 @@ int main(int argc, char *argv[]) {
         int seed;
 
         chunk_t *world[WORLD_SIZE][WORLD_SIZE];
-        cord_t cur_chunk;
+        cord_t cur_chunk_pos;
 
         int hiker_dist[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT];
         int rival_dist[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT];
@@ -1034,20 +1136,66 @@ int main(int argc, char *argv[]) {
                 }
         }
 
-        cur_chunk.x = 200;
-        cur_chunk.y = 200;
+        cur_chunk_pos.x = 200;
+        cur_chunk_pos.y = 200;
 
-        create_chunk_if_not_exists(world, cur_chunk, num_trainers);
+        create_chunk_if_not_exists(world, cur_chunk_pos, num_trainers);
 
-        print_chunk(world[cur_chunk.x][cur_chunk.y]);
+        const int num_entities = num_trainers + 1;
 
-        // generate_distance_map(hiker_dist,
-        //                       world[cur_chunk.x][cur_chunk.y]->terrain,
-        //                       get_land_cost_hiker);
+        chunk_t *cur_chunk = world[cur_chunk_pos.x][cur_chunk_pos.y];
 
-        // generate_distance_map(rival_dist,
-        //                       world[cur_chunk.x][cur_chunk.y]->terrain,
-        //                       get_land_cost_rival);
+        for (int gt = 0; 1; gt++) {
+                generate_distance_map(hiker_dist, cur_chunk,
+                                      get_land_cost_hiker);
+                generate_distance_map(rival_dist, cur_chunk,
+                                      get_land_cost_rival);
+
+                if (sc_heap_peek(cur_chunk->event_queue)->key == gt) {
+                        struct sc_heap_data *data =
+                            sc_heap_pop(cur_chunk->event_queue);
+
+                        event_t event = *(event_t *)data->data;
+                        cord_t entity_pos = event.pos;
+                        entity_type_t entity =
+                            cur_chunk->entities[entity_pos.x][entity_pos.y];
+
+                        printf("%d at cords (%d, %d)\n", entity, entity_pos.x,
+                               entity_pos.y);
+
+                        event_t *new_event;
+
+                        switch (entity) {
+                        case PC:
+                                print_chunk(cur_chunk);
+                                usleep(250000);
+                                // Wait 10 ticks
+
+                                new_event = malloc(sizeof(event_t));
+                                new_event->pos = entity_pos;
+
+                                sc_heap_add(cur_chunk->event_queue,
+                                            gt + num_entities * 10, new_event);
+                                break;
+                        case HIKER:
+                                move_to_lowest_dist_readd_event(
+                                    hiker_dist, entity_pos, cur_chunk,
+                                    num_entities, gt, get_land_cost_hiker,
+                                    HIKER);
+                                break;
+                        case RIVAL:
+                                move_to_lowest_dist_readd_event(
+                                    rival_dist, entity_pos, cur_chunk,
+                                    num_entities, gt, get_land_cost_rival,
+                                    RIVAL);
+                                break;
+                        default:
+                                break;
+                        }
+
+                        // free(data->data);
+                }
+        }
 
         // char *command;
         // size_t size_of_commands;
