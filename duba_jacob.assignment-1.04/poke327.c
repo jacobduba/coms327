@@ -278,6 +278,14 @@ int get_land_cost_other(land_t type) {
         }
 }
 
+int get_land_cost_wanderer(land_t type) {
+        if (type == ROAD) {
+                return -1;
+        }
+
+        return get_land_cost_other(type);
+}
+
 /**
  * If an entity is at pos, return entity.
  * Else return land at the pos.
@@ -889,7 +897,7 @@ int spawn_entities(chunk_t *chunk, int num_trainers) {
                                      &entity_count);
                         break;
                 case 3:
-                        spawn_entity(chunk, WANDERER, get_land_cost_other,
+                        spawn_entity(chunk, WANDERER, get_land_cost_wanderer,
                                      &entity_count);
                         break;
                 case 4:
