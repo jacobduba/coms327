@@ -1,0 +1,19 @@
+Programming Project 1.04 (Player Character and Trainers) by Jacob Duba <jduba@iastate.edu>
+
+Note: sc_heap.c is a heap I found on Github.
+
+Building
+========
+
+$ make
+
+Running
+=======
+
+$ ./poke327.out
+
+Clean
+=====
+
+$ make clean
+
