@@ -491,11 +491,11 @@ void generate_path_explore_neighbor(
 
         int new_d = d + terrain_cost;
 
-        cord_t *new_c_heap;
-        new_c_heap = malloc(sizeof(cord_t));
-        *new_c_heap = (cord_t){new_c.x, new_c.y};
-
         if (new_d < dist[new_c.x][new_c.y]) {
+                cord_t *new_c_heap;
+                new_c_heap = malloc(sizeof(cord_t));
+                *new_c_heap = (cord_t){new_c.x, new_c.y};
+
                 dist[new_c.x][new_c.y] = new_d;
                 prev[new_c.x][new_c.y] = old_c;
                 sc_heap_add(heap, new_d, new_c_heap);
@@ -989,11 +989,11 @@ void generate_dist_map_explore(struct sc_heap *heap,
 
         int travel_cost = new_land_cost + cost;
 
-        cord_t *heap_cord = malloc(sizeof(cord_t));
-        heap_cord->x = cord.x;
-        heap_cord->y = cord.y;
-
         if (travel_cost < dist_map[cord.x][cord.y]) {
+                cord_t *heap_cord = malloc(sizeof(cord_t));
+                heap_cord->x = cord.x;
+                heap_cord->y = cord.y;
+
                 dist_map[cord.x][cord.y] = travel_cost;
                 sc_heap_add(heap, travel_cost, heap_cord);
         }
@@ -1012,10 +1012,11 @@ void generate_distance_map(int dist_map[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT],
 
         sc_heap_init(&heap, CHUNK_X_WIDTH * CHUNK_Y_HEIGHT);
 
-        cord_t pc = chunk->pc_pos;
+        cord_t *pc = malloc(sizeof(cord_t));
+        *pc = chunk->pc_pos;
 
-        sc_heap_add(&heap, 0, &pc);
-        dist_map[pc.x][pc.y] = 0;
+        sc_heap_add(&heap, 0, pc);
+        dist_map[pc->x][pc->y] = 0;
 
         bool visited[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT];
 
@@ -1026,12 +1027,11 @@ void generate_distance_map(int dist_map[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT],
         }
 
         while ((elem = sc_heap_pop(&heap)) != NULL) {
-                cord_t *pos = (cord_t *)elem->data;
+                cord_t pos = *(cord_t *)elem->data;
 
-                // printf("%d", elem->data);
-                // free(elem->data);
+                free(elem->data);
 
-                int x = pos->x, y = pos->y;
+                int x = pos.x, y = pos.y;
 
                 if (visited[x][y]) {
                         continue;
@@ -1124,13 +1124,13 @@ void move_to_lowest_dist(int hiker_dist[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT],
         cur_chunk->entities[entity_pos.x][entity_pos.y].entity_type = NO_ENTITY;
         cur_chunk->entities[next_cord.x][next_cord.y].entity_type = entity_type;
 
-        event_t *new_event = malloc(sizeof(event_t));
-        new_event->pos = next_cord;
-
-        int cost_of_moving_to_new_cord =
-            get_land_cost(cur_chunk->terrain[next_cord.x][next_cord.y]);
-
         if (lowest_dist != INT_MAX) {
+                event_t *new_event = malloc(sizeof(event_t));
+                new_event->pos = next_cord;
+
+                int cost_of_moving_to_new_cord =
+                    get_land_cost(cur_chunk->terrain[next_cord.x][next_cord.y]);
+
                 sc_heap_add(cur_chunk->event_queue,
                             gt + cost_of_moving_to_new_cord * num_entities,
                             new_event);
@@ -1404,7 +1404,7 @@ int main(int argc, char *argv[]) {
                         }
 
                         // free(entity.data);
-                        // free(data->data);
+                        free(data->data);
                 }
         }
 
