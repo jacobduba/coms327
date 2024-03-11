@@ -58,6 +58,12 @@ int main(int argc, char *argv[]) {
         printf("%s\n", &a[4]);
         printf("%s\n", a + 4);
 
+        char arr[3] = "212";
+        char aww[3];
+        char *test = "";
+        char *awesome = "a";
+        strcpy(test, awesome);
+        printf("%s\n", test);
         return 0;
 }
 
