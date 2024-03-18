@@ -1,8 +1,8 @@
 #include "sc_heap.h"
+#include <curses.h>
 #include <getopt.h>
 #include <limits.h>
 #include <linux/limits.h>
-#include <ncursesw/curses.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -1080,6 +1080,8 @@ void explore_tile_lowest_distance(chunk_t *cur_chunk,
             *best_next_cord_dist)
                 return;
 
+        // If entity is a player, trigger event
+
         if (cur_chunk->entities[possible_next_cord.x][possible_next_cord.y]
                 .entity_type != NO_ENTITY)
                 return;
@@ -1287,6 +1289,84 @@ void move_explorer(entity_t entity, cord_t entity_pos, chunk_t *cur_chunk,
                     gt + cost_of_moving_to_new_cord * num_entities, new_event);
 }
 
+int render_game(chunk_t *cur_chunk) {
+        erase();
+
+        printw("--- Message Pane ---\n");
+        print_chunk(cur_chunk);
+        printw("--- Status Pane 1 ---\n");
+        printw("--- Status Pane 2 ---\n");
+
+        refresh();
+
+        return 0;
+}
+
+int do_game_tick(chunk_t *cur_chunk, int gt, int num_entities,
+                 int hiker_dist[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT],
+                 int rival_dist[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT]) {
+        if (sc_heap_peek(cur_chunk->event_queue)->key != gt)
+                return 0;
+
+        struct sc_heap_data *data = sc_heap_pop(cur_chunk->event_queue);
+
+        event_t event = *(event_t *)data->data;
+        cord_t entity_pos = event.pos;
+        entity_t entity = cur_chunk->entities[entity_pos.x][entity_pos.y];
+
+        // printf("%d at cords (%d, %d)\n", entity,
+        // entity_pos.x, entity_pos.y);
+
+        switch (entity.entity_type) {
+        case PC:
+                render_game(cur_chunk);
+
+                int command = getch();
+
+                switch (command) {
+                case 'q':
+                        return 1;
+                }
+
+                event_t *new_event = malloc(sizeof(event_t));
+                new_event->pos = entity_pos;
+
+                sc_heap_add(cur_chunk->event_queue, gt + num_entities * 10,
+                            new_event);
+
+                generate_distance_map(hiker_dist, cur_chunk,
+                                      get_land_cost_hiker);
+                generate_distance_map(rival_dist, cur_chunk,
+                                      get_land_cost_rival);
+                break;
+        case HIKER:
+                move_to_lowest_dist(hiker_dist, entity_pos, cur_chunk,
+                                    num_entities, gt, get_land_cost_hiker,
+                                    HIKER);
+                break;
+        case RIVAL:
+                move_to_lowest_dist(rival_dist, entity_pos, cur_chunk,
+                                    num_entities, gt, get_land_cost_rival,
+                                    RIVAL);
+                break;
+        case PACER:
+                move_pacer(entity, entity_pos, cur_chunk, gt, num_entities);
+                break;
+        case WANDERER:
+                move_wanderer(entity, entity_pos, cur_chunk, gt, num_entities);
+                break;
+        case EXPLORER:
+                move_explorer(entity, entity_pos, cur_chunk, gt, num_entities);
+                break;
+        default:
+                break;
+        }
+
+        free(data->data);
+
+        return 0;
+}
+
 int main(int argc, char *argv[]) {
         int seed;
 
@@ -1341,77 +1421,23 @@ int main(int argc, char *argv[]) {
 
         cur_chunk_pos.x = 200;
         cur_chunk_pos.y = 200;
-
         create_chunk_if_not_exists(world, cur_chunk_pos, num_trainers);
+        chunk_t *cur_chunk = world[cur_chunk_pos.x][cur_chunk_pos.y];
 
         const int num_entities = num_trainers + 1;
 
-        chunk_t *cur_chunk = world[cur_chunk_pos.x][cur_chunk_pos.y];
-
         initscr();
+        cbreak(); // Do not buffer inputs
+        curs_set(0);
+        keypad(stdscr, TRUE);
+        noecho();
 
-        for (int gt = 0; 1; gt++) {
-
-                if (sc_heap_peek(cur_chunk->event_queue)->key == gt) {
-                        struct sc_heap_data *data =
-                            sc_heap_pop(cur_chunk->event_queue);
-
-                        event_t event = *(event_t *)data->data;
-                        cord_t entity_pos = event.pos;
-                        entity_t entity =
-                            cur_chunk->entities[entity_pos.x][entity_pos.y];
-
-                        // printf("%d at cords (%d, %d)\n", entity,
-                        // entity_pos.x, entity_pos.y);
-
-                        switch (entity.entity_type) {
-                        case PC:
-                                erase();
-                                print_chunk(cur_chunk);
-                                refresh();
-
-                                usleep(250000);
-
-                                event_t *new_event = malloc(sizeof(event_t));
-                                new_event->pos = entity_pos;
-
-                                sc_heap_add(cur_chunk->event_queue,
-                                            gt + num_entities * 10, new_event);
-
-                                generate_distance_map(hiker_dist, cur_chunk,
-                                                      get_land_cost_hiker);
-                                generate_distance_map(rival_dist, cur_chunk,
-                                                      get_land_cost_rival);
-                                break;
-                        case HIKER:
-                                move_to_lowest_dist(hiker_dist, entity_pos,
-                                                    cur_chunk, num_entities, gt,
-                                                    get_land_cost_hiker, HIKER);
-                                break;
-                        case RIVAL:
-                                move_to_lowest_dist(rival_dist, entity_pos,
-                                                    cur_chunk, num_entities, gt,
-                                                    get_land_cost_rival, RIVAL);
-                                break;
-                        case PACER:
-                                move_pacer(entity, entity_pos, cur_chunk, gt,
-                                           num_entities);
-                                break;
-                        case WANDERER:
-                                move_wanderer(entity, entity_pos, cur_chunk, gt,
-                                              num_entities);
-                                break;
-                        case EXPLORER:
-                                move_explorer(entity, entity_pos, cur_chunk, gt,
-                                              num_entities);
-                                break;
-                        default:
-                                break;
-                        }
-
-                        // free(entity.data);
-                        free(data->data);
-                }
+        int quit_game = 0;
+        int game_tick = 0;
+        // for (int gt = 0; 1; gt++) {
+        while (!quit_game) {
+                quit_game = do_game_tick(cur_chunk, game_tick++, num_entities,
+                                         hiker_dist, rival_dist);
         }
 
         endwin();
