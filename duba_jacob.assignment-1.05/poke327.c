@@ -1440,6 +1440,7 @@ int main(int argc, char *argv[]) {
                                          hiker_dist, rival_dist);
         }
 
+        free(cur_chunk);
         endwin();
 
         return 0;
