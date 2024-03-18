@@ -2,6 +2,7 @@
 #include <getopt.h>
 #include <limits.h>
 #include <linux/limits.h>
+#include <ncursesw/curses.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -302,9 +303,9 @@ char get_char_for_pos(cord_t pos, chunk_t *chunk) {
 void print_chunk(chunk_t *chunk) {
         for (int y = 0; y < CHUNK_Y_HEIGHT; y++) {
                 for (int x = 0; x < CHUNK_X_WIDTH; x++) {
-                        printf("%c", get_char_for_pos((cord_t){x, y}, chunk));
+                        printw("%c", get_char_for_pos((cord_t){x, y}, chunk));
                 }
-                printf("\n");
+                printw("\n");
         }
 }
 
@@ -1347,6 +1348,8 @@ int main(int argc, char *argv[]) {
 
         chunk_t *cur_chunk = world[cur_chunk_pos.x][cur_chunk_pos.y];
 
+        initscr();
+
         for (int gt = 0; 1; gt++) {
 
                 if (sc_heap_peek(cur_chunk->event_queue)->key == gt) {
@@ -1363,7 +1366,10 @@ int main(int argc, char *argv[]) {
 
                         switch (entity.entity_type) {
                         case PC:
+                                erase();
                                 print_chunk(cur_chunk);
+                                refresh();
+
                                 usleep(250000);
 
                                 event_t *new_event = malloc(sizeof(event_t));
@@ -1407,6 +1413,10 @@ int main(int argc, char *argv[]) {
                         free(data->data);
                 }
         }
+
+        endwin();
+
+        return 0;
 
         // char *command;
         // size_t size_of_commands;
