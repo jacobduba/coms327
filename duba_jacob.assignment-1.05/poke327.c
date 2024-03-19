@@ -1230,10 +1230,10 @@ void find_explorer_next_tile(entity_t entity, cord_t entity_pos,
         *next_cord = new_pos;
 }
 
-int render_game(chunk_t *cur_chunk) {
+int render_game(chunk_t *cur_chunk, char *status) {
         erase();
 
-        printw("--- Message Pane ---\n");
+        printw("%s\n", status);
         print_chunk(cur_chunk);
         printw("--- Status Pane 1 ---\n");
         printw("--- Status Pane 2 ---\n");
@@ -1264,7 +1264,7 @@ int do_game_tick(chunk_t *cur_chunk, int gt, int num_entities,
 
         switch (entity_type) {
         case PC:
-                render_game(cur_chunk);
+                render_game(cur_chunk, "--- Pokemon Rougelike ---");
 
                 int command = getch();
 
@@ -1395,15 +1395,15 @@ int main(int argc, char *argv[]) {
         keypad(stdscr, TRUE);
         noecho();
 
-        int quit_game = 0;
         int game_tick = 0;
-        // for (int gt = 0; 1; gt++) {
-        while (!quit_game) {
-                quit_game = do_game_tick(cur_chunk, game_tick++, num_entities,
-                                         hiker_dist, rival_dist);
-        }
+        while (!do_game_tick(cur_chunk, game_tick++, num_entities, hiker_dist,
+                             rival_dist))
+                ;
 
+        // TODO free entire world
+        // Not sure this is super important. The OS will free the memory?
         free(cur_chunk);
+
         endwin();
 
         return 0;
