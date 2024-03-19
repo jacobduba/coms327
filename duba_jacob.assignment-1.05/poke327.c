@@ -1092,52 +1092,41 @@ void explore_tile_lowest_distance(chunk_t *cur_chunk,
         *best_next_cord_dist = hiker_dist[best_next_cord->x][best_next_cord->y];
 }
 
-void move_to_lowest_dist(int hiker_dist[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT],
-                         cord_t entity_pos, chunk_t *cur_chunk,
-                         int num_entities, int gt, int (*get_land_cost)(land_t),
-                         entity_type_t entity_type) {
-        cord_t next_cord = entity_pos;
-        int lowest_dist = INT_MAX;
+void find_dist_map_next_tile(int hiker_dist[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT],
+                             cord_t entity_pos, chunk_t *cur_chunk,
+                             int (*get_land_cost)(land_t), int *cost_to_move,
+                             cord_t *next_cord) {
+        cord_t best_known_cord = entity_pos;
+        int cost_of_moving_to_new_cord = INT_MAX;
 
         explore_tile_lowest_distance(
             cur_chunk, hiker_dist, (cord_t){entity_pos.x - 1, entity_pos.y - 1},
-            &lowest_dist, &next_cord);
-        explore_tile_lowest_distance(cur_chunk, hiker_dist,
-                                     (cord_t){entity_pos.x, entity_pos.y - 1},
-                                     &lowest_dist, &next_cord);
+            &cost_of_moving_to_new_cord, &best_known_cord);
+        explore_tile_lowest_distance(
+            cur_chunk, hiker_dist, (cord_t){entity_pos.x, entity_pos.y - 1},
+            &cost_of_moving_to_new_cord, &best_known_cord);
         explore_tile_lowest_distance(
             cur_chunk, hiker_dist, (cord_t){entity_pos.x + 1, entity_pos.y - 1},
-            &lowest_dist, &next_cord);
-        explore_tile_lowest_distance(cur_chunk, hiker_dist,
-                                     (cord_t){entity_pos.x - 1, entity_pos.y},
-                                     &lowest_dist, &next_cord);
-        explore_tile_lowest_distance(cur_chunk, hiker_dist,
-                                     (cord_t){entity_pos.x + 1, entity_pos.y},
-                                     &lowest_dist, &next_cord);
+            &cost_of_moving_to_new_cord, &best_known_cord);
+        explore_tile_lowest_distance(
+            cur_chunk, hiker_dist, (cord_t){entity_pos.x - 1, entity_pos.y},
+            &cost_of_moving_to_new_cord, &best_known_cord);
+        explore_tile_lowest_distance(
+            cur_chunk, hiker_dist, (cord_t){entity_pos.x + 1, entity_pos.y},
+            &cost_of_moving_to_new_cord, &best_known_cord);
         explore_tile_lowest_distance(
             cur_chunk, hiker_dist, (cord_t){entity_pos.x - 1, entity_pos.y + 1},
-            &lowest_dist, &next_cord);
-        explore_tile_lowest_distance(cur_chunk, hiker_dist,
-                                     (cord_t){entity_pos.x, entity_pos.y + 1},
-                                     &lowest_dist, &next_cord);
+            &cost_of_moving_to_new_cord, &best_known_cord);
+        explore_tile_lowest_distance(
+            cur_chunk, hiker_dist, (cord_t){entity_pos.x, entity_pos.y + 1},
+            &cost_of_moving_to_new_cord, &best_known_cord);
         explore_tile_lowest_distance(
             cur_chunk, hiker_dist, (cord_t){entity_pos.x + 1, entity_pos.y + 1},
-            &lowest_dist, &next_cord);
+            &cost_of_moving_to_new_cord, &best_known_cord);
 
-        cur_chunk->entities[entity_pos.x][entity_pos.y].entity_type = NO_ENTITY;
-        cur_chunk->entities[next_cord.x][next_cord.y].entity_type = entity_type;
-
-        if (lowest_dist != INT_MAX) {
-                event_t *new_event = malloc(sizeof(event_t));
-                new_event->pos = next_cord;
-
-                int cost_of_moving_to_new_cord =
-                    get_land_cost(cur_chunk->terrain[next_cord.x][next_cord.y]);
-
-                sc_heap_add(cur_chunk->event_queue,
-                            gt + cost_of_moving_to_new_cord * num_entities,
-                            new_event);
-        }
+        *next_cord = best_known_cord;
+        *cost_to_move =
+            get_land_cost(cur_chunk->terrain[next_cord->x][next_cord->y]);
 }
 
 cord_t find_tile_in_direction(cord_t cur, dir_t dir) {
@@ -1182,81 +1171,49 @@ dir_t opposite_direction(dir_t dir) {
         }
 }
 
-void move_pacer(entity_t entity, cord_t entity_pos, chunk_t *cur_chunk, int gt,
-                int num_entities) {
-        dir_t *dir = (dir_t *)entity.data;
-        cord_t new_pos = find_tile_in_direction(entity_pos, *dir);
+void find_pacer_next_tile(entity_t entity, cord_t entity_pos,
+                          chunk_t *cur_chunk, int *cost_to_move,
+                          cord_t *next_cord) {
+        dir_t *direction = (dir_t *)entity.data;
+        cord_t new_pos = find_tile_in_direction(entity_pos, *direction);
 
         if (get_land_cost_other(cur_chunk->terrain[new_pos.x][new_pos.y]) ==
                 -1 ||
             cur_chunk->entities[new_pos.x][new_pos.y].entity_type !=
                 NO_ENTITY) {
-                *dir = opposite_direction(*dir);
-                new_pos = find_tile_in_direction(entity_pos, *dir);
-        }
-
-        // If this happens twice, the pacer is stuck. So just don't move.
-        if (get_land_cost_other(cur_chunk->terrain[new_pos.x][new_pos.y]) ==
-                -1 ||
-            cur_chunk->entities[new_pos.x][new_pos.y].entity_type !=
-                NO_ENTITY) {
+                *direction = opposite_direction(*direction);
                 new_pos = entity_pos;
         }
 
-        cur_chunk->entities[entity_pos.x][entity_pos.y] =
-            (entity_t){NO_ENTITY, NULL};
-        cur_chunk->entities[new_pos.x][new_pos.y] = (entity_t){PACER, dir};
-
-        int cost_of_moving_to_new_cord =
+        *cost_to_move =
             get_land_cost_other(cur_chunk->terrain[new_pos.x][new_pos.y]);
-
-        event_t *new_event = malloc(sizeof(event_t));
-        new_event->pos = new_pos;
-
-        sc_heap_add(cur_chunk->event_queue,
-                    gt + cost_of_moving_to_new_cord * num_entities, new_event);
+        *next_cord = new_pos;
 }
 
-void move_wanderer(entity_t entity, cord_t entity_pos, chunk_t *cur_chunk,
-                   int gt, int num_entities) {
+void find_wanderer_next_tile(entity_t entity, cord_t entity_pos,
+                             chunk_t *cur_chunk, int *cost_to_move,
+                             cord_t *next_cord) {
         dir_t *dir = (dir_t *)entity.data;
         cord_t new_pos = find_tile_in_direction(entity_pos, *dir);
 
         land_t new_land = cur_chunk->terrain[new_pos.x][new_pos.y];
         land_t cur_land = cur_chunk->terrain[entity_pos.x][entity_pos.y];
 
-        // TODO replace with solution that saves wanders biome
         if (new_land != cur_land ||
             cur_chunk->entities[new_pos.x][new_pos.y].entity_type !=
                 NO_ENTITY) {
                 *dir = rand() % NUM_DIRECTIONS;
-                new_pos = find_tile_in_direction(entity_pos, *dir);
-        }
-
-        // Half assed solution. If new tile cannot be traversed, don't move.
-        new_land = cur_chunk->terrain[new_pos.x][new_pos.y];
-        if (new_land != cur_land ||
-            cur_chunk->entities[new_pos.x][new_pos.y].entity_type !=
-                NO_ENTITY) {
                 new_pos = entity_pos;
         }
 
-        cur_chunk->entities[entity_pos.x][entity_pos.y] =
-            (entity_t){NO_ENTITY, NULL};
-        cur_chunk->entities[new_pos.x][new_pos.y] = (entity_t){WANDERER, dir};
-
-        int cost_of_moving_to_new_cord =
+        *cost_to_move =
             get_land_cost_other(cur_chunk->terrain[new_pos.x][new_pos.y]);
-
-        event_t *new_event = malloc(sizeof(event_t));
-        new_event->pos = new_pos;
-
-        sc_heap_add(cur_chunk->event_queue,
-                    gt + cost_of_moving_to_new_cord * num_entities, new_event);
+        *next_cord = new_pos;
 }
 
-void move_explorer(entity_t entity, cord_t entity_pos, chunk_t *cur_chunk,
-                   int gt, int num_entities) {
+void find_explorer_next_tile(entity_t entity, cord_t entity_pos,
+                             chunk_t *cur_chunk, int *cost_to_move,
+                             cord_t *next_cord) {
         dir_t *dir = (dir_t *)entity.data;
         cord_t new_pos = find_tile_in_direction(entity_pos, *dir);
 
@@ -1265,28 +1222,12 @@ void move_explorer(entity_t entity, cord_t entity_pos, chunk_t *cur_chunk,
             cur_chunk->entities[new_pos.x][new_pos.y].entity_type !=
                 NO_ENTITY) {
                 *dir = rand() % NUM_DIRECTIONS;
-                new_pos = find_tile_in_direction(entity_pos, *dir);
-        }
-
-        if (get_land_cost_other(cur_chunk->terrain[new_pos.x][new_pos.y]) ==
-                -1 ||
-            cur_chunk->entities[new_pos.x][new_pos.y].entity_type !=
-                NO_ENTITY) {
                 new_pos = entity_pos;
         }
 
-        cur_chunk->entities[entity_pos.x][entity_pos.y] =
-            (entity_t){NO_ENTITY, NULL};
-        cur_chunk->entities[new_pos.x][new_pos.y] = (entity_t){EXPLORER, dir};
-
-        int cost_of_moving_to_new_cord =
+        *cost_to_move =
             get_land_cost_other(cur_chunk->terrain[new_pos.x][new_pos.y]);
-
-        event_t *new_event = malloc(sizeof(event_t));
-        new_event->pos = new_pos;
-
-        sc_heap_add(cur_chunk->event_queue,
-                    gt + cost_of_moving_to_new_cord * num_entities, new_event);
+        *next_cord = new_pos;
 }
 
 int render_game(chunk_t *cur_chunk) {
@@ -1317,7 +1258,11 @@ int do_game_tick(chunk_t *cur_chunk, int gt, int num_entities,
         // printf("%d at cords (%d, %d)\n", entity,
         // entity_pos.x, entity_pos.y);
 
-        switch (entity.entity_type) {
+        int cost_of_moving_to_new_cord = INT_MAX;
+        cord_t next_cord;
+        entity_type_t entity_type = entity.entity_type;
+
+        switch (entity_type) {
         case PC:
                 render_game(cur_chunk);
 
@@ -1328,11 +1273,8 @@ int do_game_tick(chunk_t *cur_chunk, int gt, int num_entities,
                         return 1;
                 }
 
-                event_t *new_event = malloc(sizeof(event_t));
-                new_event->pos = entity_pos;
-
-                sc_heap_add(cur_chunk->event_queue, gt + num_entities * 10,
-                            new_event);
+                next_cord = entity_pos;
+                cost_of_moving_to_new_cord = 10;
 
                 generate_distance_map(hiker_dist, cur_chunk,
                                       get_land_cost_hiker);
@@ -1340,29 +1282,50 @@ int do_game_tick(chunk_t *cur_chunk, int gt, int num_entities,
                                       get_land_cost_rival);
                 break;
         case HIKER:
-                move_to_lowest_dist(hiker_dist, entity_pos, cur_chunk,
-                                    num_entities, gt, get_land_cost_hiker,
-                                    HIKER);
+                find_dist_map_next_tile(
+                    hiker_dist, entity_pos, cur_chunk, get_land_cost_hiker,
+                    &cost_of_moving_to_new_cord, &next_cord);
                 break;
         case RIVAL:
-                move_to_lowest_dist(rival_dist, entity_pos, cur_chunk,
-                                    num_entities, gt, get_land_cost_rival,
-                                    RIVAL);
+                find_dist_map_next_tile(
+                    rival_dist, entity_pos, cur_chunk, get_land_cost_rival,
+                    &cost_of_moving_to_new_cord, &next_cord);
                 break;
         case PACER:
-                move_pacer(entity, entity_pos, cur_chunk, gt, num_entities);
+                find_pacer_next_tile(entity, entity_pos, cur_chunk,
+                                     &cost_of_moving_to_new_cord, &next_cord);
                 break;
         case WANDERER:
-                move_wanderer(entity, entity_pos, cur_chunk, gt, num_entities);
+                find_wanderer_next_tile(entity, entity_pos, cur_chunk,
+                                        &cost_of_moving_to_new_cord,
+                                        &next_cord);
                 break;
         case EXPLORER:
-                move_explorer(entity, entity_pos, cur_chunk, gt, num_entities);
+                find_explorer_next_tile(entity, entity_pos, cur_chunk,
+                                        &cost_of_moving_to_new_cord,
+                                        &next_cord);
                 break;
-        default:
+        case SENTRY:
+                break;
+        case NO_ENTITY:
                 break;
         }
 
         free(data->data);
+
+        if (cost_of_moving_to_new_cord == INT_MAX)
+                return 0;
+
+        cur_chunk->entities[entity_pos.x][entity_pos.y] =
+            (entity_t){NO_ENTITY, NULL};
+        cur_chunk->entities[next_cord.x][next_cord.y] =
+            (entity_t){entity_type, entity.data};
+
+        event_t *new_event = malloc(sizeof(event_t));
+        new_event->pos = next_cord;
+
+        sc_heap_add(cur_chunk->event_queue,
+                    gt + cost_of_moving_to_new_cord * num_entities, new_event);
 
         return 0;
 }
@@ -1455,8 +1418,8 @@ int main(int argc, char *argv[]) {
         //         print_terrain(world[cur_chunk.x][cur_chunk.y]->terrain);
 
         //         printf(
-        //             "(%d,%d) | Enter command: ", cur_chunk.x - WORLD_SIZE /
-        //             2, cur_chunk.y - WORLD_SIZE / 2);
+        //             "(%d,%d) | Enter command: ", cur_chunk.x -
+        //             WORLD_SIZE / 2, cur_chunk.y - WORLD_SIZE / 2);
 
         //         getline(&command, &size_of_commands, stdin);
 
@@ -1498,14 +1461,14 @@ int main(int argc, char *argv[]) {
 
         //                 if (fly_input_x < WORLD_SIZE / -2 ||
         //                     WORLD_SIZE / 2 < fly_input_x) {
-        //                         printf("Error: x input out of bounds.\n");
-        //                         break;
+        //                         printf("Error: x input out of
+        //                         bounds.\n"); break;
         //                 }
 
         //                 if (fly_input_y < WORLD_SIZE / -2 ||
         //                     WORLD_SIZE / 2 < fly_input_y) {
-        //                         printf("Error: y input out of bounds.\n");
-        //                         break;
+        //                         printf("Error: y input out of
+        //                         bounds.\n"); break;
         //                 }
 
         //                 cur_chunk.x = fly_input_x + WORLD_SIZE / 2;
