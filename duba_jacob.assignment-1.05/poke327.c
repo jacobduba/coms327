@@ -1245,7 +1245,8 @@ int render_game(chunk_t *cur_chunk, char *status) {
 
 int do_game_tick(chunk_t *cur_chunk, int gt, int num_entities,
                  int hiker_dist[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT],
-                 int rival_dist[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT]) {
+                 int rival_dist[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT],
+                 int *quit_game) {
         if (sc_heap_peek(cur_chunk->event_queue)->key != gt)
                 return 0;
 
@@ -1261,20 +1262,33 @@ int do_game_tick(chunk_t *cur_chunk, int gt, int num_entities,
         int cost_of_moving_to_new_cord = INT_MAX;
         cord_t next_cord;
         entity_type_t entity_type = entity.entity_type;
+        int valid_command;
 
         switch (entity_type) {
         case PC:
-                render_game(cur_chunk, "--- Pokemon Rougelike ---");
+                valid_command = 0;
+                char *message = "--- Pokemon Rougelike ---";
 
-                int command = getch();
+                while (!valid_command) {
+                        render_game(cur_chunk, message);
 
-                switch (command) {
-                case 'q':
-                        return 1;
+                        int command = getch();
+
+                        switch (command) {
+                        case 'q':
+                                *quit_game = 1;
+                                valid_command = 1;
+                                break;
+                        case ' ':
+                                next_cord = entity_pos;
+                                cost_of_moving_to_new_cord = 10;
+                                valid_command = 1;
+                                break;
+                        default:
+                                message = "--- Invalid Command ---";
+                                break;
+                        }
                 }
-
-                next_cord = entity_pos;
-                cost_of_moving_to_new_cord = 10;
 
                 generate_distance_map(hiker_dist, cur_chunk,
                                       get_land_cost_hiker);
@@ -1395,10 +1409,12 @@ int main(int argc, char *argv[]) {
         keypad(stdscr, TRUE);
         noecho();
 
+        int quit_game = 0;
         int game_tick = 0;
-        while (!do_game_tick(cur_chunk, game_tick++, num_entities, hiker_dist,
-                             rival_dist))
-                ;
+        while (!quit_game) {
+                do_game_tick(cur_chunk, game_tick++, num_entities, hiker_dist,
+                             rival_dist, &quit_game);
+        }
 
         // TODO free entire world
         // Not sure this is super important. The OS will free the memory?
