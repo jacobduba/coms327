@@ -22,6 +22,8 @@
 
 #define DEFAULT_NUMTRAINERS 10
 
+#define KEY_ESC 27
+
 typedef struct cord {
         int x;
         int y;
@@ -1256,6 +1258,17 @@ int handle_pc_movements(cord_t *next_cord, cord_t entity_pos,
         entity_type_t entity_type =
             cur_chunk->entities[next_cord->x][next_cord->y].entity_type;
 
+        if (entity_type == RIVAL) {
+                render_game(cur_chunk, "Placeholder Pokemon Battle");
+                int command = 0;
+                while (command != KEY_ESC) {
+                        command = getch();
+                }
+                *next_cord = entity_pos;
+                *valid_command = 1;
+                return 0;
+        }
+
         if (*cost_to_move == -1 ||
             !(entity_type == NO_ENTITY || entity_type == PC)) {
                 *valid_command = 0;
@@ -1386,6 +1399,7 @@ int do_game_tick(chunk_t *cur_chunk, int gt, int num_entities,
                                 break;
                         default:
                                 message = "Invalid Command";
+                                valid_command = 0;
                                 break;
                         }
 
