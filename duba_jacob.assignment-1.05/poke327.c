@@ -1244,6 +1244,31 @@ int render_game(chunk_t *cur_chunk, char *status) {
         return 0;
 }
 
+int handle_pc_movements(cord_t *next_cord, cord_t entity_pos,
+                        chunk_t *cur_chunk, int *cost_to_move,
+                        int *valid_command, char **message,
+                        int hiker_dist[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT],
+                        int rival_dist[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT]) {
+        *cost_to_move =
+            get_land_cost_pc(cur_chunk->terrain[next_cord->x][next_cord->y]);
+        cur_chunk->pc_pos = *next_cord;
+        entity_type_t entity_type =
+            cur_chunk->entities[next_cord->x][next_cord->y].entity_type;
+
+        if (*cost_to_move == -1 ||
+            !(entity_type == NO_ENTITY || entity_type == PC)) {
+                *valid_command = 0;
+                *message = "There's something in the way!";
+                return 0;
+        }
+
+        generate_distance_map(hiker_dist, cur_chunk, get_land_cost_hiker);
+        generate_distance_map(rival_dist, cur_chunk, get_land_cost_rival);
+
+        *valid_command = 1;
+        return 0;
+}
+
 int do_game_tick(chunk_t *cur_chunk, int gt, int num_entities,
                  int hiker_dist[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT],
                  int rival_dist[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT],
@@ -1256,9 +1281,6 @@ int do_game_tick(chunk_t *cur_chunk, int gt, int num_entities,
         event_t event = *(event_t *)data->data;
         cord_t entity_pos = event.pos;
         entity_t entity = cur_chunk->entities[entity_pos.x][entity_pos.y];
-
-        // printf("%d at cords (%d, %d)\n", entity,
-        // entity_pos.x, entity_pos.y);
 
         int cost_to_move = INT_MAX;
         cord_t next_cord;
@@ -1284,46 +1306,19 @@ int do_game_tick(chunk_t *cur_chunk, int gt, int num_entities,
                         case ' ':
                         case '.':
                                 next_cord = entity_pos;
-                                cost_to_move = get_land_cost_pc(
-                                    cur_chunk
-                                        ->terrain[next_cord.x][next_cord.y]);
-                                cur_chunk->pc_pos = next_cord;
-
-                                generate_distance_map(hiker_dist, cur_chunk,
-                                                      get_land_cost_hiker);
-                                generate_distance_map(rival_dist, cur_chunk,
-                                                      get_land_cost_rival);
-
-                                valid_command = 1;
+                                handle_pc_movements(&next_cord, entity_pos,
+                                                    cur_chunk, &cost_to_move,
+                                                    &valid_command, &message,
+                                                    hiker_dist, rival_dist);
                                 break;
                         case 'h':
                         case '4':
                                 next_cord =
                                     (cord_t){entity_pos.x - 1, entity_pos.y};
-                                cost_to_move = get_land_cost_pc(
-                                    cur_chunk
-                                        ->terrain[next_cord.x][next_cord.y]);
-                                cur_chunk->pc_pos = next_cord;
-
-                                if (get_land_cost_pc(
-                                        cur_chunk->terrain[next_cord.x]
-                                                          [next_cord.y]) ==
-                                        -1 ||
-                                    cur_chunk
-                                            ->entities[next_cord.x][next_cord.y]
-                                            .entity_type != NO_ENTITY) {
-                                        valid_command = 0;
-                                        message =
-                                            "There's something in the way!";
-                                        continue;
-                                }
-
-                                generate_distance_map(hiker_dist, cur_chunk,
-                                                      get_land_cost_hiker);
-                                generate_distance_map(rival_dist, cur_chunk,
-                                                      get_land_cost_rival);
-
-                                valid_command = 1;
+                                handle_pc_movements(&next_cord, entity_pos,
+                                                    cur_chunk, &cost_to_move,
+                                                    &valid_command, &message,
+                                                    hiker_dist, rival_dist);
                                 break;
                         default:
                                 message = "Invalid Command";
