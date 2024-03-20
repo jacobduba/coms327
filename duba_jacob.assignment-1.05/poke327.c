@@ -1176,18 +1176,18 @@ void find_pacer_next_tile(entity_t entity, cord_t entity_pos,
                           chunk_t *cur_chunk, int *cost_to_move,
                           cord_t *next_cord) {
         dir_t *direction = (dir_t *)entity.data;
+
         cord_t new_pos = find_tile_in_direction(entity_pos, *direction);
 
-        *cost_to_move =
-            get_land_cost_other(cur_chunk->terrain[new_pos.x][new_pos.y]);
-
-        if (*cost_to_move == -1 ||
+        if (get_land_cost_other(cur_chunk->terrain[new_pos.x][new_pos.y]) ||
             cur_chunk->entities[new_pos.x][new_pos.y].entity_type !=
                 NO_ENTITY) {
                 *direction = opposite_direction(*direction);
                 new_pos = entity_pos;
         }
 
+        *cost_to_move =
+            get_land_cost_other(cur_chunk->terrain[new_pos.x][new_pos.y]);
         *next_cord = new_pos;
 }
 
@@ -1218,16 +1218,16 @@ void find_explorer_next_tile(entity_t entity, cord_t entity_pos,
         dir_t *dir = (dir_t *)entity.data;
         cord_t new_pos = find_tile_in_direction(entity_pos, *dir);
 
-        *cost_to_move =
-            get_land_cost_other(cur_chunk->terrain[new_pos.x][new_pos.y]);
-
-        if (*cost_to_move ||
+        if (get_land_cost_other(cur_chunk->terrain[new_pos.x][new_pos.y]) ==
+                -1 ||
             cur_chunk->entities[new_pos.x][new_pos.y].entity_type !=
                 NO_ENTITY) {
                 *dir = rand() % NUM_DIRECTIONS;
                 new_pos = entity_pos;
         }
 
+        *cost_to_move =
+            get_land_cost_other(cur_chunk->terrain[new_pos.x][new_pos.y]);
         *next_cord = new_pos;
 }
 
@@ -1260,7 +1260,7 @@ int do_game_tick(chunk_t *cur_chunk, int gt, int num_entities,
         // printf("%d at cords (%d, %d)\n", entity,
         // entity_pos.x, entity_pos.y);
 
-        int cost_of_moving_to_new_cord = INT_MAX;
+        int cost_to_move = INT_MAX;
         cord_t next_cord;
         entity_type_t entity_type = entity.entity_type;
         int valid_command;
@@ -1284,15 +1284,32 @@ int do_game_tick(chunk_t *cur_chunk, int gt, int num_entities,
                         case ' ':
                         case '.':
                                 next_cord = entity_pos;
-                                cost_of_moving_to_new_cord = get_land_cost_pc(
+                                cost_to_move = get_land_cost_pc(
                                     cur_chunk
                                         ->terrain[next_cord.x][next_cord.y]);
+                                cur_chunk->pc_pos = next_cord;
+
+                                generate_distance_map(hiker_dist, cur_chunk,
+                                                      get_land_cost_hiker);
+                                generate_distance_map(rival_dist, cur_chunk,
+                                                      get_land_cost_rival);
+
                                 valid_command = 1;
                                 break;
                         case 'h':
                         case '4':
-                                next_cord.x = entity_pos.x - 1;
-                                next_cord.y = entity_pos.y;
+                                next_cord =
+                                    (cord_t){entity_pos.x - 1, entity_pos.y};
+                                cost_to_move = get_land_cost_pc(
+                                    cur_chunk
+                                        ->terrain[next_cord.x][next_cord.y]);
+                                cur_chunk->pc_pos = next_cord;
+
+                                generate_distance_map(hiker_dist, cur_chunk,
+                                                      get_land_cost_hiker);
+                                generate_distance_map(rival_dist, cur_chunk,
+                                                      get_land_cost_rival);
+
                                 valid_command = 1;
                                 break;
                         default:
@@ -1300,42 +1317,30 @@ int do_game_tick(chunk_t *cur_chunk, int gt, int num_entities,
                                 break;
                         }
 
-                        cost_of_moving_to_new_cord = get_land_cost_pc(
-                            cur_chunk->terrain[next_cord.x][next_cord.y]);
-
                         // if (cost_of_moving_to_new_cord == -1)
-
-                        cur_chunk->pc_pos = next_cord;
                 }
-
-                generate_distance_map(hiker_dist, cur_chunk,
-                                      get_land_cost_hiker);
-                generate_distance_map(rival_dist, cur_chunk,
-                                      get_land_cost_rival);
                 break;
         case HIKER:
-                find_dist_map_next_tile(
-                    hiker_dist, entity_pos, cur_chunk, get_land_cost_hiker,
-                    &cost_of_moving_to_new_cord, &next_cord);
+                find_dist_map_next_tile(hiker_dist, entity_pos, cur_chunk,
+                                        get_land_cost_hiker, &cost_to_move,
+                                        &next_cord);
                 break;
         case RIVAL:
-                find_dist_map_next_tile(
-                    rival_dist, entity_pos, cur_chunk, get_land_cost_rival,
-                    &cost_of_moving_to_new_cord, &next_cord);
+                find_dist_map_next_tile(rival_dist, entity_pos, cur_chunk,
+                                        get_land_cost_rival, &cost_to_move,
+                                        &next_cord);
                 break;
         case PACER:
                 find_pacer_next_tile(entity, entity_pos, cur_chunk,
-                                     &cost_of_moving_to_new_cord, &next_cord);
+                                     &cost_to_move, &next_cord);
                 break;
         case WANDERER:
                 find_wanderer_next_tile(entity, entity_pos, cur_chunk,
-                                        &cost_of_moving_to_new_cord,
-                                        &next_cord);
+                                        &cost_to_move, &next_cord);
                 break;
         case EXPLORER:
                 find_explorer_next_tile(entity, entity_pos, cur_chunk,
-                                        &cost_of_moving_to_new_cord,
-                                        &next_cord);
+                                        &cost_to_move, &next_cord);
                 break;
         case SENTRY:
                 break;
@@ -1345,7 +1350,7 @@ int do_game_tick(chunk_t *cur_chunk, int gt, int num_entities,
 
         free(data->data);
 
-        if (cost_of_moving_to_new_cord == INT_MAX)
+        if (cost_to_move == INT_MAX)
                 return 0;
 
         cur_chunk->entities[entity_pos.x][entity_pos.y] =
@@ -1356,8 +1361,8 @@ int do_game_tick(chunk_t *cur_chunk, int gt, int num_entities,
         event_t *new_event = malloc(sizeof(event_t));
         new_event->pos = next_cord;
 
-        sc_heap_add(cur_chunk->event_queue,
-                    gt + cost_of_moving_to_new_cord * num_entities, new_event);
+        sc_heap_add(cur_chunk->event_queue, gt + cost_to_move * num_entities,
+                    new_event);
 
         return 0;
 }
