@@ -1305,6 +1305,19 @@ int do_game_tick(chunk_t *cur_chunk, int gt, int num_entities,
                                         ->terrain[next_cord.x][next_cord.y]);
                                 cur_chunk->pc_pos = next_cord;
 
+                                if (get_land_cost_pc(
+                                        cur_chunk->terrain[next_cord.x]
+                                                          [next_cord.y]) ==
+                                        -1 ||
+                                    cur_chunk
+                                            ->entities[next_cord.x][next_cord.y]
+                                            .entity_type != NO_ENTITY) {
+                                        valid_command = 0;
+                                        message =
+                                            "There's something in the way!";
+                                        continue;
+                                }
+
                                 generate_distance_map(hiker_dist, cur_chunk,
                                                       get_land_cost_hiker);
                                 generate_distance_map(rival_dist, cur_chunk,
