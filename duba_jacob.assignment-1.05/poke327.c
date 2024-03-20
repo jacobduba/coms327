@@ -1299,6 +1299,69 @@ int do_game_tick(chunk_t *cur_chunk, int gt, int num_entities,
                         int command = getch();
 
                         switch (command) {
+                        case 'y':
+                        case '7':
+                                next_cord = (cord_t){entity_pos.x - 1,
+                                                     entity_pos.y - 1};
+                                handle_pc_movements(&next_cord, entity_pos,
+                                                    cur_chunk, &cost_to_move,
+                                                    &valid_command, &message,
+                                                    hiker_dist, rival_dist);
+                                break;
+                        case 'k':
+                        case '8':
+                                next_cord =
+                                    (cord_t){entity_pos.x, entity_pos.y - 1};
+                                handle_pc_movements(&next_cord, entity_pos,
+                                                    cur_chunk, &cost_to_move,
+                                                    &valid_command, &message,
+                                                    hiker_dist, rival_dist);
+                                break;
+                        case '9':
+                        case 'u':
+                                next_cord = (cord_t){entity_pos.x + 1,
+                                                     entity_pos.y - 1};
+                                handle_pc_movements(&next_cord, entity_pos,
+                                                    cur_chunk, &cost_to_move,
+                                                    &valid_command, &message,
+                                                    hiker_dist, rival_dist);
+                                break;
+                        case '6':
+                        case 'l':
+                                next_cord =
+                                    (cord_t){entity_pos.x + 1, entity_pos.y};
+                                handle_pc_movements(&next_cord, entity_pos,
+                                                    cur_chunk, &cost_to_move,
+                                                    &valid_command, &message,
+                                                    hiker_dist, rival_dist);
+                                break;
+                        case '3':
+                        case 'n':
+                                next_cord = (cord_t){entity_pos.x + 1,
+                                                     entity_pos.y + 1};
+                                handle_pc_movements(&next_cord, entity_pos,
+                                                    cur_chunk, &cost_to_move,
+                                                    &valid_command, &message,
+                                                    hiker_dist, rival_dist);
+                                break;
+                        case '2':
+                        case 'j':
+                                next_cord =
+                                    (cord_t){entity_pos.x, entity_pos.y + 1};
+                                handle_pc_movements(&next_cord, entity_pos,
+                                                    cur_chunk, &cost_to_move,
+                                                    &valid_command, &message,
+                                                    hiker_dist, rival_dist);
+                                break;
+                        case '1':
+                        case 'b':
+                                next_cord = (cord_t){entity_pos.x - 1,
+                                                     entity_pos.y + 1};
+                                handle_pc_movements(&next_cord, entity_pos,
+                                                    cur_chunk, &cost_to_move,
+                                                    &valid_command, &message,
+                                                    hiker_dist, rival_dist);
+                                break;
                         case 'h':
                         case '4':
                                 next_cord =
