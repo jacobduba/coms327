@@ -78,6 +78,7 @@ typedef enum entity_type {
 typedef struct entity {
         entity_type_t entity_type;
         entity_type_t movement_type;
+        int defeated;
         void *data;
 } entity_t;
 
@@ -841,6 +842,7 @@ cord_t spawn_entity(chunk_t *chunk, entity_type_t entity_type,
         entity_t entity;
         entity.entity_type = entity_type;
         entity.movement_type = entity_type;
+        entity.defeated = 0;
 
         if (entity_type == WANDERER || entity_type == PACER ||
             entity_type == EXPLORER) {
@@ -1258,10 +1260,16 @@ int handle_pc_movements(cord_t *next_cord, cord_t entity_pos,
         *cost_to_move =
             get_land_cost_pc(cur_chunk->terrain[next_cord->x][next_cord->y]);
         cur_chunk->pc_pos = *next_cord;
-        entity_type_t entity_type =
-            cur_chunk->entities[next_cord->x][next_cord->y].entity_type;
+        entity_t *entity = &cur_chunk->entities[next_cord->x][next_cord->y];
+        entity_type_t entity_type = entity->entity_type;
 
-        if (entity_type == RIVAL) {
+        if (entity_type == RIVAL || entity_type == HIKER) {
+                if (entity->defeated) {
+                        *valid_command = 0;
+                        *message = "This trainer has been defeated";
+                        return 0;
+                }
+
                 render_game(cur_chunk, "Placeholder Pokemon Battle");
                 int command = 0;
                 while (command != KEY_ESC) {
@@ -1270,10 +1278,14 @@ int handle_pc_movements(cord_t *next_cord, cord_t entity_pos,
                 entity_t *trainer =
                     &cur_chunk->entities[next_cord->x][next_cord->y];
 
-                trainer->movement_type = EXPLORER;
-                dir_t *dir = malloc(sizeof(dir_t));
-                *dir = rand() % NUM_DIRECTIONS;
-                trainer->data = dir;
+                if (entity_type == RIVAL || entity_type == HIKER) {
+                        trainer->movement_type = EXPLORER;
+                        dir_t *dir = malloc(sizeof(dir_t));
+                        *dir = rand() % NUM_DIRECTIONS;
+                        trainer->data = dir;
+                }
+
+                entity->defeated = 1;
 
                 *next_cord = entity_pos;
                 *valid_command = 1;
@@ -1311,6 +1323,7 @@ int do_game_tick(chunk_t *cur_chunk, int gt, int num_entities,
         cord_t next_cord;
         entity_type_t entity_type = entity.entity_type;
         entity_type_t movement_type = entity.movement_type;
+        int entity_defeated = entity.defeated;
         int valid_command;
 
         switch (movement_type) {
@@ -1452,9 +1465,9 @@ int do_game_tick(chunk_t *cur_chunk, int gt, int num_entities,
                 return 0;
 
         cur_chunk->entities[entity_pos.x][entity_pos.y] =
-            (entity_t){NO_ENTITY, NO_ENTITY, NULL};
-        cur_chunk->entities[next_cord.x][next_cord.y] =
-            (entity_t){entity_type, movement_type, entity.data};
+            (entity_t){NO_ENTITY, NO_ENTITY, 0, NULL};
+        cur_chunk->entities[next_cord.x][next_cord.y] = (entity_t){
+            entity_type, movement_type, entity_defeated, entity.data};
 
         event_t *new_event = malloc(sizeof(event_t));
         new_event->pos = next_cord;
