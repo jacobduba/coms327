@@ -1179,7 +1179,8 @@ void find_pacer_next_tile(entity_t entity, cord_t entity_pos,
 
         cord_t new_pos = find_tile_in_direction(entity_pos, *direction);
 
-        if (get_land_cost_other(cur_chunk->terrain[new_pos.x][new_pos.y]) ||
+        if (get_land_cost_other(cur_chunk->terrain[new_pos.x][new_pos.y]) ==
+                -1 ||
             cur_chunk->entities[new_pos.x][new_pos.y].entity_type !=
                 NO_ENTITY) {
                 *direction = opposite_direction(*direction);
@@ -1298,9 +1299,14 @@ int do_game_tick(chunk_t *cur_chunk, int gt, int num_entities,
                         int command = getch();
 
                         switch (command) {
-                        case 'q':
-                                *quit_game = 1;
-                                valid_command = 1;
+                        case 'h':
+                        case '4':
+                                next_cord =
+                                    (cord_t){entity_pos.x - 1, entity_pos.y};
+                                handle_pc_movements(&next_cord, entity_pos,
+                                                    cur_chunk, &cost_to_move,
+                                                    &valid_command, &message,
+                                                    hiker_dist, rival_dist);
                                 break;
                         case '5':
                         case ' ':
@@ -1311,14 +1317,9 @@ int do_game_tick(chunk_t *cur_chunk, int gt, int num_entities,
                                                     &valid_command, &message,
                                                     hiker_dist, rival_dist);
                                 break;
-                        case 'h':
-                        case '4':
-                                next_cord =
-                                    (cord_t){entity_pos.x - 1, entity_pos.y};
-                                handle_pc_movements(&next_cord, entity_pos,
-                                                    cur_chunk, &cost_to_move,
-                                                    &valid_command, &message,
-                                                    hiker_dist, rival_dist);
+                        case 'Q':
+                                *quit_game = 1;
+                                valid_command = 1;
                                 break;
                         default:
                                 message = "Invalid Command";
