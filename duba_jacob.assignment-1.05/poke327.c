@@ -166,8 +166,10 @@ int get_land_cost_pc(land_t type) {
                 return -1;
         case WATER:
                 return -1;
-        case GATE:
-                return 10;
+        // case GATE:
+        //         return 10;
+        case GATE: // Don't allow to traverse GATE
+                return -1;
         }
 }
 
@@ -1279,11 +1281,16 @@ int do_game_tick(chunk_t *cur_chunk, int gt, int num_entities,
                                 *quit_game = 1;
                                 valid_command = 1;
                                 break;
+                        case '5':
                         case ' ':
+                        case '.':
                                 next_cord = entity_pos;
-                                cost_of_moving_to_new_cord = 10;
+                                cost_of_moving_to_new_cord = get_land_cost_pc(
+                                    cur_chunk
+                                        ->terrain[entity_pos.x][entity_pos.y]);
                                 valid_command = 1;
                                 break;
+
                         default:
                                 message = "--- Invalid Command ---";
                                 break;
@@ -1326,6 +1333,9 @@ int do_game_tick(chunk_t *cur_chunk, int gt, int num_entities,
         }
 
         free(data->data);
+
+        // cost_of_moving_to_new_cord =
+        //     get_land_cost_other(cur_chunk->terrain[next_cord.x][next_cord.y]);
 
         if (cost_of_moving_to_new_cord == INT_MAX)
                 return 0;
