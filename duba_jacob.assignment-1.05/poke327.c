@@ -1267,6 +1267,14 @@ int handle_pc_movements(cord_t *next_cord, cord_t entity_pos,
                 while (command != KEY_ESC) {
                         command = getch();
                 }
+                entity_t *trainer =
+                    &cur_chunk->entities[next_cord->x][next_cord->y];
+
+                trainer->movement_type = EXPLORER;
+                dir_t *dir = malloc(sizeof(dir_t));
+                *dir = rand() % NUM_DIRECTIONS;
+                trainer->data = dir;
+
                 *next_cord = entity_pos;
                 *valid_command = 1;
                 return 0;
