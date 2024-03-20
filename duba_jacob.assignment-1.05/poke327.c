@@ -1252,6 +1252,27 @@ int render_game(chunk_t *cur_chunk, char *status) {
         return 0;
 }
 
+int start_pokemon_battle(chunk_t *cur_chunk, cord_t trainer_cord) {
+
+        render_game(cur_chunk, "Placeholder Pokemon Battle");
+        int command = 0;
+        while (command != KEY_ESC) {
+                command = getch();
+        }
+        // entity_t *trainer = &cur_chunk->entities[next_cord->x][next_cord->y];
+        entity_t *trainer =
+            &cur_chunk->entities[trainer_cord.x][trainer_cord.y];
+
+        if (trainer->entity_type == RIVAL || trainer->entity_type == HIKER) {
+                trainer->movement_type = EXPLORER;
+                dir_t *dir = malloc(sizeof(dir_t));
+                *dir = rand() % NUM_DIRECTIONS;
+                trainer->data = dir;
+        }
+
+        trainer->defeated = 1;
+}
+
 int handle_pc_movements(cord_t *next_cord, cord_t entity_pos,
                         chunk_t *cur_chunk, int *cost_to_move,
                         int *valid_command, char **message,
@@ -1263,37 +1284,24 @@ int handle_pc_movements(cord_t *next_cord, cord_t entity_pos,
         entity_t *entity = &cur_chunk->entities[next_cord->x][next_cord->y];
         entity_type_t entity_type = entity->entity_type;
 
-        if (entity_type == RIVAL || entity_type == HIKER) {
+        if (entity_type == RIVAL || entity_type == HIKER ||
+            entity_type == EXPLORER || entity_type == PACER ||
+            entity_type == SENTRY || entity_type == WANDERER) {
                 if (entity->defeated) {
                         *valid_command = 0;
                         *message = "This trainer has been defeated";
                         return 0;
                 }
 
-                render_game(cur_chunk, "Placeholder Pokemon Battle");
-                int command = 0;
-                while (command != KEY_ESC) {
-                        command = getch();
-                }
-                entity_t *trainer =
-                    &cur_chunk->entities[next_cord->x][next_cord->y];
-
-                if (entity_type == RIVAL || entity_type == HIKER) {
-                        trainer->movement_type = EXPLORER;
-                        dir_t *dir = malloc(sizeof(dir_t));
-                        *dir = rand() % NUM_DIRECTIONS;
-                        trainer->data = dir;
-                }
-
-                entity->defeated = 1;
+                start_pokemon_battle(cur_chunk, *next_cord);
 
                 *next_cord = entity_pos;
                 *valid_command = 1;
                 return 0;
         }
 
-        if (*cost_to_move == -1 ||
-            !(entity_type == NO_ENTITY || entity_type == PC)) {
+        if (*cost_to_move == -1) { // ||
+                // !(entity_type == NO_ENTITY || entity_type == PC)) {
                 *valid_command = 0;
                 *message = "There's something in the way!";
                 return 0;
