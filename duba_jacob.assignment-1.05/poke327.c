@@ -77,6 +77,7 @@ typedef enum entity_type {
 
 typedef struct entity {
         entity_type_t entity_type;
+        entity_type_t movement_type;
         void *data;
 } entity_t;
 
@@ -839,6 +840,7 @@ cord_t spawn_entity(chunk_t *chunk, entity_type_t entity_type,
 
         entity_t entity;
         entity.entity_type = entity_type;
+        entity.movement_type = entity_type;
 
         if (entity_type == WANDERER || entity_type == PACER ||
             entity_type == EXPLORER) {
@@ -872,7 +874,8 @@ int spawn_entities(chunk_t *chunk, int num_trainers) {
 
         for (int y = 0; y < CHUNK_Y_HEIGHT; y++) {
                 for (int x = 0; x < CHUNK_X_WIDTH; x++) {
-                        chunk->entities[x][y] = (entity_t){NO_ENTITY, NULL};
+                        chunk->entities[x][y] =
+                            (entity_t){NO_ENTITY, NO_ENTITY, NULL};
                 }
         }
 
@@ -1299,9 +1302,10 @@ int do_game_tick(chunk_t *cur_chunk, int gt, int num_entities,
         int cost_to_move = INT_MAX;
         cord_t next_cord;
         entity_type_t entity_type = entity.entity_type;
+        entity_type_t movement_type = entity.movement_type;
         int valid_command;
 
-        switch (entity_type) {
+        switch (movement_type) {
         case PC:
                 valid_command = 0;
                 char *message = "Pokemon Rougelike";
@@ -1440,9 +1444,9 @@ int do_game_tick(chunk_t *cur_chunk, int gt, int num_entities,
                 return 0;
 
         cur_chunk->entities[entity_pos.x][entity_pos.y] =
-            (entity_t){NO_ENTITY, NULL};
+            (entity_t){NO_ENTITY, NO_ENTITY, NULL};
         cur_chunk->entities[next_cord.x][next_cord.y] =
-            (entity_t){entity_type, entity.data};
+            (entity_t){entity_type, movement_type, entity.data};
 
         event_t *new_event = malloc(sizeof(event_t));
         new_event->pos = next_cord;
@@ -1516,6 +1520,7 @@ int main(int argc, char *argv[]) {
         cbreak(); // Do not buffer inputs
         curs_set(0);
         keypad(stdscr, TRUE);
+        set_escdelay(0);
         noecho();
 
         int quit_game = 0;
