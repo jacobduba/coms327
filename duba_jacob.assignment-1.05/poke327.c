@@ -1088,8 +1088,7 @@ void explore_tile_lowest_distance(chunk_t *cur_chunk,
                 .entity_type != NO_ENTITY)
                 return;
 
-        best_next_cord->x = possible_next_cord.x;
-        best_next_cord->y = possible_next_cord.y;
+        *best_next_cord = possible_next_cord;
 
         *best_next_cord_dist = hiker_dist[best_next_cord->x][best_next_cord->y];
 }
@@ -1179,16 +1178,16 @@ void find_pacer_next_tile(entity_t entity, cord_t entity_pos,
         dir_t *direction = (dir_t *)entity.data;
         cord_t new_pos = find_tile_in_direction(entity_pos, *direction);
 
-        if (get_land_cost_other(cur_chunk->terrain[new_pos.x][new_pos.y]) ==
-                -1 ||
+        *cost_to_move =
+            get_land_cost_other(cur_chunk->terrain[new_pos.x][new_pos.y]);
+
+        if (*cost_to_move == -1 ||
             cur_chunk->entities[new_pos.x][new_pos.y].entity_type !=
                 NO_ENTITY) {
                 *direction = opposite_direction(*direction);
                 new_pos = entity_pos;
         }
 
-        *cost_to_move =
-            get_land_cost_other(cur_chunk->terrain[new_pos.x][new_pos.y]);
         *next_cord = new_pos;
 }
 
@@ -1219,23 +1218,23 @@ void find_explorer_next_tile(entity_t entity, cord_t entity_pos,
         dir_t *dir = (dir_t *)entity.data;
         cord_t new_pos = find_tile_in_direction(entity_pos, *dir);
 
-        if (get_land_cost_other(cur_chunk->terrain[new_pos.x][new_pos.y]) ==
-                -1 ||
+        *cost_to_move =
+            get_land_cost_other(cur_chunk->terrain[new_pos.x][new_pos.y]);
+
+        if (*cost_to_move ||
             cur_chunk->entities[new_pos.x][new_pos.y].entity_type !=
                 NO_ENTITY) {
                 *dir = rand() % NUM_DIRECTIONS;
                 new_pos = entity_pos;
         }
 
-        *cost_to_move =
-            get_land_cost_other(cur_chunk->terrain[new_pos.x][new_pos.y]);
         *next_cord = new_pos;
 }
 
 int render_game(chunk_t *cur_chunk, char *status) {
         erase();
 
-        printw("%s\n", status);
+        printw("--- %s ---\n", status);
         print_chunk(cur_chunk);
         printw("--- Status Pane 1 ---\n");
         printw("--- Status Pane 2 ---\n");
@@ -1269,7 +1268,7 @@ int do_game_tick(chunk_t *cur_chunk, int gt, int num_entities,
         switch (entity_type) {
         case PC:
                 valid_command = 0;
-                char *message = "--- Pokemon Rougelike ---";
+                char *message = "Pokemon Rougelike";
 
                 while (!valid_command) {
                         render_game(cur_chunk, message);
@@ -1287,14 +1286,26 @@ int do_game_tick(chunk_t *cur_chunk, int gt, int num_entities,
                                 next_cord = entity_pos;
                                 cost_of_moving_to_new_cord = get_land_cost_pc(
                                     cur_chunk
-                                        ->terrain[entity_pos.x][entity_pos.y]);
+                                        ->terrain[next_cord.x][next_cord.y]);
                                 valid_command = 1;
                                 break;
-
+                        case 'h':
+                        case '4':
+                                next_cord.x = entity_pos.x - 1;
+                                next_cord.y = entity_pos.y;
+                                valid_command = 1;
+                                break;
                         default:
-                                message = "--- Invalid Command ---";
+                                message = "Invalid Command";
                                 break;
                         }
+
+                        cost_of_moving_to_new_cord = get_land_cost_pc(
+                            cur_chunk->terrain[next_cord.x][next_cord.y]);
+
+                        // if (cost_of_moving_to_new_cord == -1)
+
+                        cur_chunk->pc_pos = next_cord;
                 }
 
                 generate_distance_map(hiker_dist, cur_chunk,
@@ -1333,9 +1344,6 @@ int do_game_tick(chunk_t *cur_chunk, int gt, int num_entities,
         }
 
         free(data->data);
-
-        // cost_of_moving_to_new_cord =
-        //     get_land_cost_other(cur_chunk->terrain[next_cord.x][next_cord.y]);
 
         if (cost_of_moving_to_new_cord == INT_MAX)
                 return 0;
