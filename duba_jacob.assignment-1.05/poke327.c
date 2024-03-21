@@ -1335,16 +1335,13 @@ int do_game_tick(chunk_t *cur_chunk, int gt, int num_entities,
 
         event_t event = *(event_t *)data->data;
         cord_t entity_pos = event.pos;
-        entity_t entity = cur_chunk->entities[entity_pos.x][entity_pos.y];
+        entity_t *entity = &cur_chunk->entities[entity_pos.x][entity_pos.y];
 
         int cost_to_move = INT_MAX;
         cord_t next_cord;
-        entity_type_t entity_type = entity.entity_type;
-        entity_type_t movement_type = entity.movement_type;
-        int entity_defeated = entity.defeated;
         int valid_command;
 
-        switch (movement_type) {
+        switch (entity->movement_type) {
         case PC:
                 valid_command = 0;
                 char *message = "Pokemon Rougelike";
@@ -1460,15 +1457,15 @@ int do_game_tick(chunk_t *cur_chunk, int gt, int num_entities,
                                         &next_cord);
                 break;
         case PACER:
-                find_pacer_next_tile(entity, entity_pos, cur_chunk,
+                find_pacer_next_tile(*entity, entity_pos, cur_chunk,
                                      &cost_to_move, &next_cord);
                 break;
         case WANDERER:
-                find_wanderer_next_tile(entity, entity_pos, cur_chunk,
+                find_wanderer_next_tile(*entity, entity_pos, cur_chunk,
                                         &cost_to_move, &next_cord);
                 break;
         case EXPLORER:
-                find_explorer_next_tile(entity, entity_pos, cur_chunk,
+                find_explorer_next_tile(*entity, entity_pos, cur_chunk,
                                         &cost_to_move, &next_cord);
                 break;
         case SENTRY:
@@ -1482,10 +1479,14 @@ int do_game_tick(chunk_t *cur_chunk, int gt, int num_entities,
         if (cost_to_move == INT_MAX)
                 return 0;
 
+        // TODO Switch to using pointers for entities
+
+        entity_t temp = *entity;
+
         cur_chunk->entities[entity_pos.x][entity_pos.y] =
             (entity_t){NO_ENTITY, NO_ENTITY, 0, NULL};
         cur_chunk->entities[next_cord.x][next_cord.y] = (entity_t){
-            entity_type, movement_type, entity_defeated, entity.data};
+            temp.entity_type, temp.movement_type, temp.defeated, temp.data};
 
         event_t *new_event = malloc(sizeof(event_t));
         new_event->pos = next_cord;
