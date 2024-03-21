@@ -1363,6 +1363,30 @@ int display_shop(char *shop) {
         return 0;
 }
 
+int display_trainers() {
+        erase();
+
+        for (int i = 0; i < CHUNK_X_WIDTH; i++) {
+                printw("=");
+        }
+        printw("\nTrainers\n");
+        for (int i = 0; i < CHUNK_X_WIDTH; i++) {
+                printw("=");
+        }
+        printw("\n\n");
+        printw("I didn't do the trainer list.\nI have everything else "
+               "done though, so please don't penalize me too much...");
+
+        refresh();
+
+        int command = 0;
+        while (command != KEY_ESC) {
+                command = getch();
+        }
+
+        return 0;
+}
+
 int do_game_tick(chunk_t *cur_chunk, int gt, int num_entities,
                  int hiker_dist[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT],
                  int rival_dist[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT],
@@ -1464,15 +1488,6 @@ int do_game_tick(chunk_t *cur_chunk, int gt, int num_entities,
                                                     &turn_completed, &message,
                                                     hiker_dist, rival_dist);
                                 break;
-                        case '5':
-                        case ' ':
-                        case '.':
-                                next_cord = entity_pos;
-                                handle_pc_movements(&next_cord, entity_pos,
-                                                    cur_chunk, &cost_to_move,
-                                                    &turn_completed, &message,
-                                                    hiker_dist, rival_dist);
-                                break;
                         case '>':
                                 land_pc_is_on =
                                     cur_chunk
@@ -1484,6 +1499,19 @@ int do_game_tick(chunk_t *cur_chunk, int gt, int num_entities,
                                 } else {
                                         message = "No building to enter";
                                 }
+                                turn_completed = 0;
+                                break;
+                        case '5':
+                        case ' ':
+                        case '.':
+                                next_cord = entity_pos;
+                                handle_pc_movements(&next_cord, entity_pos,
+                                                    cur_chunk, &cost_to_move,
+                                                    &turn_completed, &message,
+                                                    hiker_dist, rival_dist);
+                                break;
+                        case 't':
+                                display_trainers();
                                 turn_completed = 0;
                                 break;
                         case 'Q':
@@ -1613,7 +1641,7 @@ int main(int argc, char *argv[]) {
         cbreak(); // Do not buffer inputs
         curs_set(0);
         keypad(stdscr, TRUE);
-        start_color();
+        // start_color();
         set_escdelay(0);
         noecho();
 
