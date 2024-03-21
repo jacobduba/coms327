@@ -877,7 +877,7 @@ int spawn_entities(chunk_t *chunk, int num_trainers) {
         for (int y = 0; y < CHUNK_Y_HEIGHT; y++) {
                 for (int x = 0; x < CHUNK_X_WIDTH; x++) {
                         chunk->entities[x][y] =
-                            (entity_t){NO_ENTITY, NO_ENTITY, NULL};
+                            (entity_t){NO_ENTITY, NO_ENTITY, 0, NULL};
                 }
         }
 
@@ -1112,6 +1112,8 @@ int start_pokemon_battle(chunk_t *cur_chunk, cord_t trainer_cord) {
         }
 
         trainer->defeated = 1;
+
+        return 0;
 }
 
 void explore_tile_lowest_distance(chunk_t *cur_chunk,
@@ -1338,6 +1340,22 @@ int handle_pc_movements(cord_t *next_cord, cord_t entity_pos,
         return 0;
 }
 
+int display_shop(char *shop) {
+        erase();
+
+        printw("--- %s ---\n", shop);
+        printw("This is this a placeholder screen.");
+
+        refresh();
+
+        int command = 0;
+        while (command != '<') {
+                command = getch();
+        }
+
+        return 0;
+}
+
 int do_game_tick(chunk_t *cur_chunk, int gt, int num_entities,
                  int hiker_dist[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT],
                  int rival_dist[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT],
@@ -1353,14 +1371,15 @@ int do_game_tick(chunk_t *cur_chunk, int gt, int num_entities,
 
         int cost_to_move = INT_MAX;
         cord_t next_cord;
-        int valid_command;
+        int turn_completed;
+        land_t land_pc_is_on;
 
         switch (entity->movement_type) {
         case PC:
-                valid_command = 0;
+                turn_completed = 0;
                 char *message = "Pokemon Rougelike";
 
-                while (!valid_command) {
+                while (!turn_completed) {
                         render_game(cur_chunk, message);
 
                         int command = getch();
@@ -1372,7 +1391,7 @@ int do_game_tick(chunk_t *cur_chunk, int gt, int num_entities,
                                                      entity_pos.y - 1};
                                 handle_pc_movements(&next_cord, entity_pos,
                                                     cur_chunk, &cost_to_move,
-                                                    &valid_command, &message,
+                                                    &turn_completed, &message,
                                                     hiker_dist, rival_dist);
                                 break;
                         case 'k':
@@ -1381,7 +1400,7 @@ int do_game_tick(chunk_t *cur_chunk, int gt, int num_entities,
                                     (cord_t){entity_pos.x, entity_pos.y - 1};
                                 handle_pc_movements(&next_cord, entity_pos,
                                                     cur_chunk, &cost_to_move,
-                                                    &valid_command, &message,
+                                                    &turn_completed, &message,
                                                     hiker_dist, rival_dist);
                                 break;
                         case '9':
@@ -1390,7 +1409,7 @@ int do_game_tick(chunk_t *cur_chunk, int gt, int num_entities,
                                                      entity_pos.y - 1};
                                 handle_pc_movements(&next_cord, entity_pos,
                                                     cur_chunk, &cost_to_move,
-                                                    &valid_command, &message,
+                                                    &turn_completed, &message,
                                                     hiker_dist, rival_dist);
                                 break;
                         case '6':
@@ -1399,7 +1418,7 @@ int do_game_tick(chunk_t *cur_chunk, int gt, int num_entities,
                                     (cord_t){entity_pos.x + 1, entity_pos.y};
                                 handle_pc_movements(&next_cord, entity_pos,
                                                     cur_chunk, &cost_to_move,
-                                                    &valid_command, &message,
+                                                    &turn_completed, &message,
                                                     hiker_dist, rival_dist);
                                 break;
                         case '3':
@@ -1408,7 +1427,7 @@ int do_game_tick(chunk_t *cur_chunk, int gt, int num_entities,
                                                      entity_pos.y + 1};
                                 handle_pc_movements(&next_cord, entity_pos,
                                                     cur_chunk, &cost_to_move,
-                                                    &valid_command, &message,
+                                                    &turn_completed, &message,
                                                     hiker_dist, rival_dist);
                                 break;
                         case '2':
@@ -1417,7 +1436,7 @@ int do_game_tick(chunk_t *cur_chunk, int gt, int num_entities,
                                     (cord_t){entity_pos.x, entity_pos.y + 1};
                                 handle_pc_movements(&next_cord, entity_pos,
                                                     cur_chunk, &cost_to_move,
-                                                    &valid_command, &message,
+                                                    &turn_completed, &message,
                                                     hiker_dist, rival_dist);
                                 break;
                         case '1':
@@ -1426,7 +1445,7 @@ int do_game_tick(chunk_t *cur_chunk, int gt, int num_entities,
                                                      entity_pos.y + 1};
                                 handle_pc_movements(&next_cord, entity_pos,
                                                     cur_chunk, &cost_to_move,
-                                                    &valid_command, &message,
+                                                    &turn_completed, &message,
                                                     hiker_dist, rival_dist);
                                 break;
                         case 'h':
@@ -1435,7 +1454,7 @@ int do_game_tick(chunk_t *cur_chunk, int gt, int num_entities,
                                     (cord_t){entity_pos.x - 1, entity_pos.y};
                                 handle_pc_movements(&next_cord, entity_pos,
                                                     cur_chunk, &cost_to_move,
-                                                    &valid_command, &message,
+                                                    &turn_completed, &message,
                                                     hiker_dist, rival_dist);
                                 break;
                         case '5':
@@ -1444,16 +1463,29 @@ int do_game_tick(chunk_t *cur_chunk, int gt, int num_entities,
                                 next_cord = entity_pos;
                                 handle_pc_movements(&next_cord, entity_pos,
                                                     cur_chunk, &cost_to_move,
-                                                    &valid_command, &message,
+                                                    &turn_completed, &message,
                                                     hiker_dist, rival_dist);
+                                break;
+                        case '>':
+                                land_pc_is_on =
+                                    cur_chunk
+                                        ->terrain[entity_pos.x][entity_pos.y];
+                                if (land_pc_is_on == POKEMART) {
+                                        display_shop("Pokemart");
+                                } else if (land_pc_is_on == POKEMON_CENTER) {
+                                        display_shop("Pokemon Center");
+                                } else {
+                                        message = "No building to enter";
+                                }
+                                turn_completed = 0;
                                 break;
                         case 'Q':
                                 *quit_game = 1;
-                                valid_command = 1;
+                                turn_completed = 1;
                                 break;
                         default:
                                 message = "Invalid Command";
-                                valid_command = 0;
+                                turn_completed = 0;
                                 break;
                         }
 
