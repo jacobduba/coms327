@@ -1223,17 +1223,22 @@ dir_t opposite_direction(dir_t dir) {
         }
 }
 
-void find_pacer_next_tile(entity_t entity, cord_t entity_pos,
+void find_pacer_next_tile(entity_t cur_entity, cord_t entity_pos,
                           chunk_t *cur_chunk, int *cost_to_move,
                           cord_t *next_cord) {
-        dir_t *direction = (dir_t *)entity.data;
+        dir_t *direction = (dir_t *)cur_entity.data;
 
         cord_t new_pos = find_tile_in_direction(entity_pos, *direction);
 
+        entity_t explored_entity = cur_chunk->entities[new_pos.x][new_pos.y];
+
+        if (explored_entity.entity_type == PC && !cur_entity.defeated) {
+                start_pokemon_battle(cur_chunk, entity_pos);
+        }
+
         if (get_land_cost_other(cur_chunk->terrain[new_pos.x][new_pos.y]) ==
                 -1 ||
-            cur_chunk->entities[new_pos.x][new_pos.y].entity_type !=
-                NO_ENTITY) {
+            explored_entity.entity_type != NO_ENTITY) {
                 *direction = opposite_direction(*direction);
                 new_pos = entity_pos;
         }
@@ -1243,18 +1248,22 @@ void find_pacer_next_tile(entity_t entity, cord_t entity_pos,
         *next_cord = new_pos;
 }
 
-void find_wanderer_next_tile(entity_t entity, cord_t entity_pos,
+void find_wanderer_next_tile(entity_t cur_entity, cord_t entity_pos,
                              chunk_t *cur_chunk, int *cost_to_move,
                              cord_t *next_cord) {
-        dir_t *dir = (dir_t *)entity.data;
+        dir_t *dir = (dir_t *)cur_entity.data;
         cord_t new_pos = find_tile_in_direction(entity_pos, *dir);
 
         land_t new_land = cur_chunk->terrain[new_pos.x][new_pos.y];
         land_t cur_land = cur_chunk->terrain[entity_pos.x][entity_pos.y];
 
-        if (new_land != cur_land ||
-            cur_chunk->entities[new_pos.x][new_pos.y].entity_type !=
-                NO_ENTITY) {
+        entity_t explored_entity = cur_chunk->entities[new_pos.x][new_pos.y];
+
+        if (explored_entity.entity_type == PC && !cur_entity.defeated) {
+                start_pokemon_battle(cur_chunk, entity_pos);
+        }
+
+        if (new_land != cur_land || explored_entity.entity_type != NO_ENTITY) {
                 *dir = rand() % NUM_DIRECTIONS;
                 new_pos = entity_pos;
         }
@@ -1264,16 +1273,21 @@ void find_wanderer_next_tile(entity_t entity, cord_t entity_pos,
         *next_cord = new_pos;
 }
 
-void find_explorer_next_tile(entity_t entity, cord_t entity_pos,
+void find_explorer_next_tile(entity_t cur_entity, cord_t entity_pos,
                              chunk_t *cur_chunk, int *cost_to_move,
                              cord_t *next_cord) {
-        dir_t *dir = (dir_t *)entity.data;
+        dir_t *dir = (dir_t *)cur_entity.data;
         cord_t new_pos = find_tile_in_direction(entity_pos, *dir);
+
+        entity_t explored_entity = cur_chunk->entities[new_pos.x][new_pos.y];
+
+        if (explored_entity.entity_type == PC && !cur_entity.defeated) {
+                start_pokemon_battle(cur_chunk, entity_pos);
+        }
 
         if (get_land_cost_other(cur_chunk->terrain[new_pos.x][new_pos.y]) ==
                 -1 ||
-            cur_chunk->entities[new_pos.x][new_pos.y].entity_type !=
-                NO_ENTITY) {
+            explored_entity.entity_type != NO_ENTITY) {
                 *dir = rand() % NUM_DIRECTIONS;
                 new_pos = entity_pos;
         }
