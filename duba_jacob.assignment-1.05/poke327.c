@@ -1080,19 +1080,63 @@ void generate_distance_map(int dist_map[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT],
         sc_heap_term(&heap);
 }
 
+int render_game(chunk_t *cur_chunk, char *status) {
+        erase();
+
+        printw("--- %s ---\n", status);
+        print_chunk(cur_chunk);
+        printw("--- Status Pane 1 ---\n");
+        printw("--- Status Pane 2 ---\n");
+
+        refresh();
+
+        return 0;
+}
+
+int start_pokemon_battle(chunk_t *cur_chunk, cord_t trainer_cord) {
+
+        render_game(cur_chunk, "Placeholder Pokemon Battle");
+        int command = 0;
+        while (command != KEY_ESC) {
+                command = getch();
+        }
+        // entity_t *trainer = &cur_chunk->entities[next_cord->x][next_cord->y];
+        entity_t *trainer =
+            &cur_chunk->entities[trainer_cord.x][trainer_cord.y];
+
+        if (trainer->entity_type == RIVAL || trainer->entity_type == HIKER) {
+                trainer->movement_type = EXPLORER;
+                dir_t *dir = malloc(sizeof(dir_t));
+                *dir = rand() % NUM_DIRECTIONS;
+                trainer->data = dir;
+        }
+
+        trainer->defeated = 1;
+}
+
 void explore_tile_lowest_distance(chunk_t *cur_chunk,
                                   int hiker_dist[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT],
                                   cord_t possible_next_cord,
                                   int *best_next_cord_dist,
-                                  cord_t *best_next_cord) {
+                                  cord_t *best_next_cord, cord_t entity_pos) {
         if (hiker_dist[possible_next_cord.x][possible_next_cord.y] >=
             *best_next_cord_dist)
                 return;
 
         // If entity is a player, trigger event
 
-        if (cur_chunk->entities[possible_next_cord.x][possible_next_cord.y]
-                .entity_type != NO_ENTITY)
+        entity_t *explored_entity =
+            &cur_chunk->entities[possible_next_cord.x][possible_next_cord.y];
+        entity_t *cur_entity = &cur_chunk->entities[entity_pos.x][entity_pos.y];
+
+        if (explored_entity->entity_type == PC && !cur_entity->defeated) {
+                start_pokemon_battle(cur_chunk, entity_pos);
+                *best_next_cord = entity_pos;
+                *best_next_cord_dist = 0;
+                return;
+        }
+
+        if (explored_entity->entity_type != NO_ENTITY)
                 return;
 
         *best_next_cord = possible_next_cord;
@@ -1109,28 +1153,28 @@ void find_dist_map_next_tile(int hiker_dist[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT],
 
         explore_tile_lowest_distance(
             cur_chunk, hiker_dist, (cord_t){entity_pos.x - 1, entity_pos.y - 1},
-            &cost_of_moving_to_new_cord, &best_known_cord);
+            &cost_of_moving_to_new_cord, &best_known_cord, entity_pos);
         explore_tile_lowest_distance(
             cur_chunk, hiker_dist, (cord_t){entity_pos.x, entity_pos.y - 1},
-            &cost_of_moving_to_new_cord, &best_known_cord);
+            &cost_of_moving_to_new_cord, &best_known_cord, entity_pos);
         explore_tile_lowest_distance(
             cur_chunk, hiker_dist, (cord_t){entity_pos.x + 1, entity_pos.y - 1},
-            &cost_of_moving_to_new_cord, &best_known_cord);
+            &cost_of_moving_to_new_cord, &best_known_cord, entity_pos);
         explore_tile_lowest_distance(
             cur_chunk, hiker_dist, (cord_t){entity_pos.x - 1, entity_pos.y},
-            &cost_of_moving_to_new_cord, &best_known_cord);
+            &cost_of_moving_to_new_cord, &best_known_cord, entity_pos);
         explore_tile_lowest_distance(
             cur_chunk, hiker_dist, (cord_t){entity_pos.x + 1, entity_pos.y},
-            &cost_of_moving_to_new_cord, &best_known_cord);
+            &cost_of_moving_to_new_cord, &best_known_cord, entity_pos);
         explore_tile_lowest_distance(
             cur_chunk, hiker_dist, (cord_t){entity_pos.x - 1, entity_pos.y + 1},
-            &cost_of_moving_to_new_cord, &best_known_cord);
+            &cost_of_moving_to_new_cord, &best_known_cord, entity_pos);
         explore_tile_lowest_distance(
             cur_chunk, hiker_dist, (cord_t){entity_pos.x, entity_pos.y + 1},
-            &cost_of_moving_to_new_cord, &best_known_cord);
+            &cost_of_moving_to_new_cord, &best_known_cord, entity_pos);
         explore_tile_lowest_distance(
             cur_chunk, hiker_dist, (cord_t){entity_pos.x + 1, entity_pos.y + 1},
-            &cost_of_moving_to_new_cord, &best_known_cord);
+            &cost_of_moving_to_new_cord, &best_known_cord, entity_pos);
 
         *next_cord = best_known_cord;
         *cost_to_move =
@@ -1237,40 +1281,6 @@ void find_explorer_next_tile(entity_t entity, cord_t entity_pos,
         *cost_to_move =
             get_land_cost_other(cur_chunk->terrain[new_pos.x][new_pos.y]);
         *next_cord = new_pos;
-}
-
-int render_game(chunk_t *cur_chunk, char *status) {
-        erase();
-
-        printw("--- %s ---\n", status);
-        print_chunk(cur_chunk);
-        printw("--- Status Pane 1 ---\n");
-        printw("--- Status Pane 2 ---\n");
-
-        refresh();
-
-        return 0;
-}
-
-int start_pokemon_battle(chunk_t *cur_chunk, cord_t trainer_cord) {
-
-        render_game(cur_chunk, "Placeholder Pokemon Battle");
-        int command = 0;
-        while (command != KEY_ESC) {
-                command = getch();
-        }
-        // entity_t *trainer = &cur_chunk->entities[next_cord->x][next_cord->y];
-        entity_t *trainer =
-            &cur_chunk->entities[trainer_cord.x][trainer_cord.y];
-
-        if (trainer->entity_type == RIVAL || trainer->entity_type == HIKER) {
-                trainer->movement_type = EXPLORER;
-                dir_t *dir = malloc(sizeof(dir_t));
-                *dir = rand() % NUM_DIRECTIONS;
-                trainer->data = dir;
-        }
-
-        trainer->defeated = 1;
 }
 
 int handle_pc_movements(cord_t *next_cord, cord_t entity_pos,
