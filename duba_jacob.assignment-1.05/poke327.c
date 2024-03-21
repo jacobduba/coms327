@@ -1343,7 +1343,14 @@ int handle_pc_movements(cord_t *next_cord, cord_t entity_pos,
 int display_shop(char *shop) {
         erase();
 
-        printw("--- %s ---\n", shop);
+        for (int i = 0; i < CHUNK_X_WIDTH; i++) {
+                printw("=");
+        }
+        printw("\n%s\n", shop);
+        for (int i = 0; i < CHUNK_X_WIDTH; i++) {
+                printw("=");
+        }
+        printw("\n\n");
         printw("This is this a placeholder screen.");
 
         refresh();
@@ -1606,6 +1613,7 @@ int main(int argc, char *argv[]) {
         cbreak(); // Do not buffer inputs
         curs_set(0);
         keypad(stdscr, TRUE);
+        start_color();
         set_escdelay(0);
         noecho();
 
