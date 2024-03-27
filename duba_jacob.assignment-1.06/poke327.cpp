@@ -96,6 +96,7 @@ typedef struct chunk {
         entity_t entities[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT];
         struct sc_heap *event_queue;
         cord_t pc_pos;
+        int game_tick;
 } chunk_t;
 
 char land_t_to_char(land_t land) {
@@ -980,6 +981,8 @@ int create_chunk_if_not_exists(chunk_t *world[WORLD_SIZE][WORLD_SIZE],
 
         spawn_entities(chunk, num_trainers);
 
+        chunk->game_tick = 0;
+
         world[cur_chunk.x][cur_chunk.y] = chunk;
 
         return 0;
@@ -1395,10 +1398,14 @@ int display_trainers() {
         return 0;
 }
 
-int do_game_tick(chunk_t *cur_chunk, int gt, int num_entities,
+int do_game_tick(chunk_t *cur_chunk, int num_entities,
                  int hiker_dist[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT],
                  int rival_dist[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT],
                  int *quit_game) {
+        // Want to increment game_tick before sc_heap_peak, but don't want to
+        // change the tick we're manipulating here
+        int gt = cur_chunk->game_tick++;
+
         if (sc_heap_peek(cur_chunk->event_queue)->key != gt)
                 return 0;
 
@@ -1656,10 +1663,9 @@ int main(int argc, char *argv[]) {
         noecho();
 
         int quit_game = 0;
-        int game_tick = 0;
         while (!quit_game) {
-                do_game_tick(cur_chunk, game_tick++, num_entities, hiker_dist,
-                             rival_dist, &quit_game);
+                do_game_tick(cur_chunk, num_entities, hiker_dist, rival_dist,
+                             &quit_game);
         }
 
         // TODO free entire world
