@@ -96,7 +96,7 @@ typedef struct chunk {
         entity_t entities[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT];
         struct sc_heap *event_queue;
         cord_t pc_pos;
-        int game_tick;
+        int tick;
 } chunk_t;
 
 char land_t_to_char(land_t land) {
@@ -171,10 +171,10 @@ int get_land_cost_pc(land_t type) {
                 return -1;
         case WATER:
                 return -1;
-        // case GATE:
-        //         return 10;
-        case GATE: // Don't allow to traverse GATE
-                return -1;
+        case GATE:
+                return 10;
+                // case GATE: // Don't allow to traverse GATE
+                //         return -1;
         }
 }
 
@@ -934,13 +934,14 @@ int spawn_entities(chunk_t *chunk, int num_trainers) {
         return 0;
 }
 
-int create_chunk_if_not_exists(chunk_t *world[WORLD_SIZE][WORLD_SIZE],
-                               cord_t cur_chunk, int num_trainers) {
+int create_chunk(chunk_t *world[WORLD_SIZE][WORLD_SIZE], cord_t cur_chunk,
+                 int num_trainers) {
         chunk_t *chunk;
         int manhatten_dist;
         int n_gate_x, s_gate_x, w_gate_y, e_gate_y;
         int place_poke_center, place_pokemart;
         int prob_of_building;
+
         const int num_entities = num_trainers + 1;
 
         if (world[cur_chunk.x][cur_chunk.y]) {
@@ -981,7 +982,7 @@ int create_chunk_if_not_exists(chunk_t *world[WORLD_SIZE][WORLD_SIZE],
 
         spawn_entities(chunk, num_trainers);
 
-        chunk->game_tick = 0;
+        chunk->tick = 0;
 
         world[cur_chunk.x][cur_chunk.y] = chunk;
 
@@ -1308,7 +1309,6 @@ int handle_pc_movements(cord_t *next_cord, cord_t entity_pos,
                         int rival_dist[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT]) {
         land_t next_land = cur_chunk->terrain[next_cord->x][next_cord->y];
         *cost_to_move = get_land_cost_pc(next_land);
-        cur_chunk->pc_pos = *next_cord;
         entity_t *entity = &cur_chunk->entities[next_cord->x][next_cord->y];
         entity_type_t entity_type = entity->entity_type;
 
@@ -1328,15 +1328,6 @@ int handle_pc_movements(cord_t *next_cord, cord_t entity_pos,
                 return 0;
         }
 
-        if (next_land == GATE) {
-                *valid_command = 0;
-                *message = "Huh";
-                // TODO
-                if (next_cord->x == 0) {
-                }
-                return 0;
-        }
-
         if (*cost_to_move == -1) { // ||
                 // !(entity_type == NO_ENTITY || entity_type == PC)) {
                 *valid_command = 0;
@@ -1344,8 +1335,14 @@ int handle_pc_movements(cord_t *next_cord, cord_t entity_pos,
                 return 0;
         }
 
-        generate_distance_map(hiker_dist, cur_chunk, get_land_cost_hiker);
-        generate_distance_map(rival_dist, cur_chunk, get_land_cost_rival);
+        cur_chunk->pc_pos = *next_cord;
+
+        if (next_land != GATE) {
+                generate_distance_map(hiker_dist, cur_chunk,
+                                      get_land_cost_hiker);
+                generate_distance_map(rival_dist, cur_chunk,
+                                      get_land_cost_rival);
+        }
 
         *valid_command = 1;
         return 0;
@@ -1398,15 +1395,16 @@ int display_trainers() {
         return 0;
 }
 
-int do_game_tick(chunk_t *cur_chunk, int num_entities,
-                 int hiker_dist[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT],
-                 int rival_dist[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT],
-                 int *quit_game) {
+int do_tick(chunk_t *world[WORLD_SIZE][WORLD_SIZE], cord_t *cur_chunk_pos,
+            int num_entities, int hiker_dist[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT],
+            int rival_dist[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT], int *quit_game,
+            int num_trainers) {
+        chunk_t *cur_chunk = world[cur_chunk_pos->x][cur_chunk_pos->y];
         // Want to increment game_tick before sc_heap_peak, but don't want to
         // change the tick we're manipulating here
-        int gt = cur_chunk->game_tick++;
+        int cur_tick = cur_chunk->tick++;
 
-        if (sc_heap_peek(cur_chunk->event_queue)->key != gt)
+        if (sc_heap_peek(cur_chunk->event_queue)->key != cur_tick)
                 return 0;
 
         struct sc_heap_data *data = sc_heap_pop(cur_chunk->event_queue);
@@ -1583,14 +1581,24 @@ int do_game_tick(chunk_t *cur_chunk, int num_entities,
 
         cur_chunk->entities[entity_pos.x][entity_pos.y] =
             (entity_t){NO_ENTITY, NO_ENTITY, 0, NULL};
-        cur_chunk->entities[next_cord.x][next_cord.y] = (entity_t){
-            temp.entity_type, temp.movement_type, temp.defeated, temp.data};
 
-        event_t *new_event = (event_t *)malloc(sizeof(event_t));
-        new_event->pos = next_cord;
+        // Note: only entity that can enter gates is pc.
+        if (cur_chunk->terrain[next_cord.x][next_cord.y] == GATE) {
+                if (next_cord.x == 0) {
+                        cur_chunk_pos->x -= 1;
+                        create_chunk(world, *cur_chunk_pos, num_trainers);
+                }
+        } else {
+                cur_chunk->entities[next_cord.x][next_cord.y] =
+                    (entity_t){temp.entity_type, temp.movement_type,
+                               temp.defeated, temp.data};
 
-        sc_heap_add(cur_chunk->event_queue, gt + cost_to_move * num_entities,
-                    new_event);
+                event_t *new_event = (event_t *)malloc(sizeof(event_t));
+                new_event->pos = next_cord;
+
+                sc_heap_add(cur_chunk->event_queue,
+                            cur_tick + cost_to_move * num_entities, new_event);
+        }
 
         return 0;
 }
@@ -1649,8 +1657,7 @@ int main(int argc, char *argv[]) {
 
         cur_chunk_pos.x = 200;
         cur_chunk_pos.y = 200;
-        create_chunk_if_not_exists(world, cur_chunk_pos, num_trainers);
-        chunk_t *cur_chunk = world[cur_chunk_pos.x][cur_chunk_pos.y];
+        create_chunk(world, cur_chunk_pos, num_trainers);
 
         const int num_entities = num_trainers + 1;
 
@@ -1664,13 +1671,9 @@ int main(int argc, char *argv[]) {
 
         int quit_game = 0;
         while (!quit_game) {
-                do_game_tick(cur_chunk, num_entities, hiker_dist, rival_dist,
-                             &quit_game);
+                do_tick(world, &cur_chunk_pos, num_entities, hiker_dist,
+                        rival_dist, &quit_game, num_trainers);
         }
-
-        // TODO free entire world
-        // Not sure this is super important. The OS will free the memory?
-        free(cur_chunk);
 
         endwin();
 
