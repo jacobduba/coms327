@@ -884,9 +884,9 @@ int spawn_trainers(chunk_t *chunk, int num_trainers) {
                 }
         }
 
-        cord_t pc_pos = spawn_entity_randomly(
-            chunk, PC, return_negative_one_if_not_road, entity_count++);
-        chunk->pc_pos = pc_pos;
+        // cord_t pc_pos = spawn_entity_randomly(
+        //     chunk, PC, return_negative_one_if_not_road, entity_count++);
+        // chunk->pc_pos = pc_pos;
 
         if (num_trainers < 1)
                 return 0;
@@ -1406,11 +1406,11 @@ int display_trainers() {
         return 0;
 }
 
-int do_tick(chunk_t *world[WORLD_SIZE][WORLD_SIZE], cord_t *cur_chunk_pos,
+int do_tick(chunk_t *world[WORLD_SIZE][WORLD_SIZE], cord_t *cur_chunk_cord,
             int num_entities, int hiker_dist[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT],
             int rival_dist[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT], int *quit_game,
             int num_trainers) {
-        chunk_t *cur_chunk = world[cur_chunk_pos->x][cur_chunk_pos->y];
+        chunk_t *cur_chunk = world[cur_chunk_cord->x][cur_chunk_cord->y];
         // Want to increment game_tick before sc_heap_peak, but don't want to
         // change the tick we're manipulating here
         int cur_tick = cur_chunk->tick++;
@@ -1594,11 +1594,76 @@ int do_tick(chunk_t *world[WORLD_SIZE][WORLD_SIZE], cord_t *cur_chunk_pos,
             (entity_t){NO_ENTITY, NO_ENTITY, 0, NULL};
 
         // Note: only entity that can enter gates is pc.
+        // Thus is entity is in gate, switch chunk
         if (cur_chunk->terrain[next_cord.x][next_cord.y] == GATE) {
                 if (next_cord.x == 0) {
-                        cur_chunk_pos->x -= 1;
-                        gen_chunk_if_not_exists(world, *cur_chunk_pos,
+                        cur_chunk_cord->x -= 1;
+                        gen_chunk_if_not_exists(world, *cur_chunk_cord,
                                                 num_trainers);
+
+                        cord_t cord_on_new_chunk;
+                        cord_on_new_chunk.x = CHUNK_X_WIDTH - 2;
+                        cord_on_new_chunk.y = entity_pos.y;
+
+                        spawn_entity(
+                            world[cur_chunk_cord->x][cur_chunk_cord->y], PC,
+                            cord_on_new_chunk,
+                            --world[cur_chunk_cord->x][cur_chunk_cord->y]
+                                  ->tick);
+
+                        world[cur_chunk_cord->x][cur_chunk_cord->y]->pc_pos =
+                            cord_on_new_chunk;
+                } else if (next_cord.x == CHUNK_X_WIDTH - 1) {
+                        cur_chunk_cord->x += 1;
+                        gen_chunk_if_not_exists(world, *cur_chunk_cord,
+                                                num_trainers);
+
+                        cord_t cord_on_new_chunk;
+                        cord_on_new_chunk.x = 1;
+                        cord_on_new_chunk.y = entity_pos.y;
+
+                        spawn_entity(
+                            world[cur_chunk_cord->x][cur_chunk_cord->y], PC,
+                            cord_on_new_chunk,
+                            --world[cur_chunk_cord->x][cur_chunk_cord->y]
+                                  ->tick);
+
+                        world[cur_chunk_cord->x][cur_chunk_cord->y]->pc_pos =
+                            cord_on_new_chunk;
+                } else if (next_cord.y == 0) {
+                        cur_chunk_cord->y -= 1;
+                        gen_chunk_if_not_exists(world, *cur_chunk_cord,
+                                                num_trainers);
+
+                        cord_t cord_on_new_chunk;
+                        cord_on_new_chunk.x = entity_pos.x;
+                        cord_on_new_chunk.y = CHUNK_Y_HEIGHT - 2;
+
+                        spawn_entity(
+                            world[cur_chunk_cord->x][cur_chunk_cord->y], PC,
+                            cord_on_new_chunk,
+                            --world[cur_chunk_cord->x][cur_chunk_cord->y]
+                                  ->tick);
+
+                        world[cur_chunk_cord->x][cur_chunk_cord->y]->pc_pos =
+                            cord_on_new_chunk;
+                } else if (next_cord.y == CHUNK_Y_HEIGHT - 1) {
+                        cur_chunk_cord->y += 1;
+                        gen_chunk_if_not_exists(world, *cur_chunk_cord,
+                                                num_trainers);
+
+                        cord_t cord_on_new_chunk;
+                        cord_on_new_chunk.x = entity_pos.x;
+                        cord_on_new_chunk.y = 1;
+
+                        spawn_entity(
+                            world[cur_chunk_cord->x][cur_chunk_cord->y], PC,
+                            cord_on_new_chunk,
+                            --world[cur_chunk_cord->x][cur_chunk_cord->y]
+                                  ->tick);
+
+                        world[cur_chunk_cord->x][cur_chunk_cord->y]->pc_pos =
+                            cord_on_new_chunk;
                 }
         } else {
                 cur_chunk->entities[next_cord.x][next_cord.y] =
@@ -1670,6 +1735,14 @@ int main(int argc, char *argv[]) {
         cur_chunk_pos.x = 200;
         cur_chunk_pos.y = 200;
         gen_chunk_if_not_exists(world, cur_chunk_pos, num_trainers);
+
+        // Put the pc at the first tick by subtraccting the tick and
+        // spawning pc at the new tick
+        cord_t pc_pos = spawn_entity_randomly(
+            world[cur_chunk_pos.x][cur_chunk_pos.y], PC,
+            return_negative_one_if_not_road,
+            --world[cur_chunk_pos.x][cur_chunk_pos.y]->tick);
+        world[cur_chunk_pos.x][cur_chunk_pos.y]->pc_pos = pc_pos;
 
         const int num_entities = num_trainers + 1;
 
