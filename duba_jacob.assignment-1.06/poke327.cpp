@@ -825,20 +825,8 @@ int get_gate_coordinates(chunk_t *world[WORLD_SIZE][WORLD_SIZE], cord_t chunk,
         }
 }
 
-/**
- * Picks a random tile without another entity and where get_land_cost(land_t) !=
- * -1.
- * Returns position entity was spawned at.
- */
-cord_t spawn_entity(chunk_t *chunk, entity_type_t entity_type,
-                    int (*get_land_cost)(land_t), int *seq_number) {
-        cord_t cord;
-        do {
-                cord.x = rand() % (CHUNK_X_WIDTH - 2) + 1;
-                cord.y = rand() % (CHUNK_Y_HEIGHT - 2) + 1;
-        } while (chunk->entities[cord.x][cord.y].entity_type != NO_ENTITY ||
-                 get_land_cost(chunk->terrain[cord.x][cord.y]) == -1);
-
+void spawn_entity(chunk_t *chunk, entity_type_t entity_type, cord_t cord,
+                  int tick) {
         entity_t entity;
         entity.entity_type = entity_type;
         entity.movement_type = entity_type;
@@ -856,9 +844,24 @@ cord_t spawn_entity(chunk_t *chunk, entity_type_t entity_type,
         event->pos = cord;
         // event->seq_number = *seq_number;
 
-        sc_heap_add(chunk->event_queue, *seq_number, event);
+        sc_heap_add(chunk->event_queue, tick, event);
+}
 
-        (*seq_number)++;
+/**
+ * Picks a random tile without another entity and where get_land_cost(land_t) !=
+ * -1.
+ * Returns position entity was spawned at.
+ */
+cord_t spawn_entity_randomly(chunk_t *chunk, entity_type_t entity_type,
+                             int (*get_land_cost)(land_t), int tick) {
+        cord_t cord;
+        do {
+                cord.x = rand() % (CHUNK_X_WIDTH - 2) + 1;
+                cord.y = rand() % (CHUNK_Y_HEIGHT - 2) + 1;
+        } while (chunk->entities[cord.x][cord.y].entity_type != NO_ENTITY ||
+                 get_land_cost(chunk->terrain[cord.x][cord.y]) == -1);
+
+        spawn_entity(chunk, entity_type, cord, tick);
 
         return cord;
 }
@@ -871,7 +874,7 @@ int return_negative_one_if_not_road(land_t land) {
         return 0;
 }
 
-int spawn_entities(chunk_t *chunk, int num_trainers) {
+int spawn_trainers(chunk_t *chunk, int num_trainers) {
         int entity_count = 0;
 
         for (int y = 0; y < CHUNK_Y_HEIGHT; y++) {
@@ -881,47 +884,51 @@ int spawn_entities(chunk_t *chunk, int num_trainers) {
                 }
         }
 
-        cord_t pc_pos = spawn_entity(chunk, PC, return_negative_one_if_not_road,
-                                     &entity_count);
+        cord_t pc_pos = spawn_entity_randomly(
+            chunk, PC, return_negative_one_if_not_road, entity_count++);
         chunk->pc_pos = pc_pos;
 
         if (num_trainers < 1)
                 return 0;
 
-        spawn_entity(chunk, HIKER, get_land_cost_hiker, &entity_count);
+        spawn_entity_randomly(chunk, HIKER, get_land_cost_hiker,
+                              entity_count++);
 
         if (num_trainers < 2)
                 return 0;
 
-        spawn_entity(chunk, RIVAL, get_land_cost_rival, &entity_count);
+        spawn_entity_randomly(chunk, RIVAL, get_land_cost_rival,
+                              entity_count++);
 
         int entity_type;
         for (int i = 2; i < num_trainers; i++) {
                 entity_type = rand() % NUM_TRAINER_TYPES;
                 switch (entity_type) {
                 case 0:
-                        spawn_entity(chunk, HIKER, get_land_cost_hiker,
-                                     &entity_count);
+                        spawn_entity_randomly(chunk, HIKER, get_land_cost_hiker,
+                                              entity_count++);
                         break;
                 case 1:
-                        spawn_entity(chunk, RIVAL, get_land_cost_rival,
-                                     &entity_count);
+                        spawn_entity_randomly(chunk, RIVAL, get_land_cost_rival,
+                                              entity_count++);
                         break;
                 case 2:
-                        spawn_entity(chunk, PACER, get_land_cost_other,
-                                     &entity_count);
+                        spawn_entity_randomly(chunk, PACER, get_land_cost_other,
+                                              entity_count++);
                         break;
                 case 3:
-                        spawn_entity(chunk, WANDERER, get_land_cost_wanderer,
-                                     &entity_count);
+                        spawn_entity_randomly(chunk, WANDERER,
+                                              get_land_cost_wanderer,
+                                              entity_count++);
                         break;
                 case 4:
-                        spawn_entity(chunk, SENTRY, get_land_cost_other,
-                                     &entity_count);
+                        spawn_entity_randomly(
+                            chunk, SENTRY, get_land_cost_other, entity_count++);
                         break;
                 case 5:
-                        spawn_entity(chunk, EXPLORER, get_land_cost_other,
-                                     &entity_count);
+                        spawn_entity_randomly(chunk, EXPLORER,
+                                              get_land_cost_other,
+                                              entity_count++);
                         break;
                         // case 6:
                         //         spawn_entity(chunk, SWIMMER,
@@ -934,8 +941,12 @@ int spawn_entities(chunk_t *chunk, int num_trainers) {
         return 0;
 }
 
-int create_chunk(chunk_t *world[WORLD_SIZE][WORLD_SIZE], cord_t cur_chunk,
-                 int num_trainers) {
+/**
+ * Generates chunk if the chunk does not exist.
+ * Does NOT place PC.
+ */
+int gen_chunk_if_not_exists(chunk_t *world[WORLD_SIZE][WORLD_SIZE],
+                            cord_t cur_chunk, int num_trainers) {
         chunk_t *chunk;
         int manhatten_dist;
         int n_gate_x, s_gate_x, w_gate_y, e_gate_y;
@@ -980,7 +991,7 @@ int create_chunk(chunk_t *world[WORLD_SIZE][WORLD_SIZE], cord_t cur_chunk,
         chunk->event_queue = (sc_heap *)malloc(sizeof(struct sc_heap));
         sc_heap_init(chunk->event_queue, num_entities);
 
-        spawn_entities(chunk, num_trainers);
+        spawn_trainers(chunk, num_trainers);
 
         chunk->tick = 0;
 
@@ -1586,7 +1597,8 @@ int do_tick(chunk_t *world[WORLD_SIZE][WORLD_SIZE], cord_t *cur_chunk_pos,
         if (cur_chunk->terrain[next_cord.x][next_cord.y] == GATE) {
                 if (next_cord.x == 0) {
                         cur_chunk_pos->x -= 1;
-                        create_chunk(world, *cur_chunk_pos, num_trainers);
+                        gen_chunk_if_not_exists(world, *cur_chunk_pos,
+                                                num_trainers);
                 }
         } else {
                 cur_chunk->entities[next_cord.x][next_cord.y] =
@@ -1657,7 +1669,7 @@ int main(int argc, char *argv[]) {
 
         cur_chunk_pos.x = 200;
         cur_chunk_pos.y = 200;
-        create_chunk(world, cur_chunk_pos, num_trainers);
+        gen_chunk_if_not_exists(world, cur_chunk_pos, num_trainers);
 
         const int num_entities = num_trainers + 1;
 
