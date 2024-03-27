@@ -323,7 +323,7 @@ void place_seed_in_gen_queue(
         cord_t tall_grass_seed_1 = {rand() % CHUNK_X_WIDTH,
                                     rand() % CHUNK_Y_HEIGHT};
 
-        terrain[tall_grass_seed_1.x][tall_grass_seed_1.y] = (land_t) type;
+        terrain[tall_grass_seed_1.x][tall_grass_seed_1.y] = (land_t)type;
 
         generation_queue[*head] = tall_grass_seed_1;
 
@@ -376,10 +376,10 @@ int try_place_building(land_t terrain[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT],
                 return 1;
         }
 
-        *b1 = (land_t) building;
-        *b2 = (land_t) building;
-        *b3 = (land_t) building;
-        *b4 = (land_t) building;
+        *b1 = (land_t)building;
+        *b2 = (land_t)building;
+        *b3 = (land_t)building;
+        *b4 = (land_t)building;
 
         return 0;
 }
@@ -499,7 +499,7 @@ void generate_path_explore_neighbor(
         int new_d = d + terrain_cost;
 
         if (new_d < dist[new_c.x][new_c.y]) {
-                cord_t *new_c_heap = (cord_t *) malloc(sizeof(cord_t));
+                cord_t *new_c_heap = (cord_t *)malloc(sizeof(cord_t));
                 *new_c_heap = (cord_t){new_c.x, new_c.y};
 
                 dist[new_c.x][new_c.y] = new_d;
@@ -531,7 +531,7 @@ int gen_path_from_cords(land_t terrain[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT],
 
         sc_heap_init(&heap, CHUNK_X_WIDTH * CHUNK_Y_HEIGHT);
 
-        cord_t *start_heap = (cord_t *) malloc(sizeof(cord_t));
+        cord_t *start_heap = (cord_t *)malloc(sizeof(cord_t));
         *start_heap = start;
 
         sc_heap_add(&heap, 0, start_heap);
@@ -851,7 +851,7 @@ cord_t spawn_entity(chunk_t *chunk, entity_type_t entity_type,
         }
         chunk->entities[cord.x][cord.y] = entity;
 
-        event_t *event = (event_t *) malloc(sizeof(event_t));
+        event_t *event = (event_t *)malloc(sizeof(event_t));
         event->pos = cord;
         // event->seq_number = *seq_number;
 
@@ -946,7 +946,7 @@ int create_chunk_if_not_exists(chunk_t *world[WORLD_SIZE][WORLD_SIZE],
                 return 1;
         }
 
-        chunk = (chunk_t *) malloc(sizeof(chunk_t));
+        chunk = (chunk_t *)malloc(sizeof(chunk_t));
 
         chunk->w_gate_y = get_gate_coordinates(
             world, (cord_t){cur_chunk.x - 1, cur_chunk.y}, EAST_GATE);
@@ -975,7 +975,7 @@ int create_chunk_if_not_exists(chunk_t *world[WORLD_SIZE][WORLD_SIZE],
 
         generate_terrain(chunk, place_poke_center, place_pokemart);
 
-        chunk->event_queue = (sc_heap *) malloc(sizeof(struct sc_heap));
+        chunk->event_queue = (sc_heap *)malloc(sizeof(struct sc_heap));
         sc_heap_init(chunk->event_queue, num_entities);
 
         spawn_entities(chunk, num_trainers);
@@ -999,7 +999,7 @@ void generate_dist_map_explore(struct sc_heap *heap,
         int travel_cost = new_land_cost + cost;
 
         if (travel_cost < dist_map[cord.x][cord.y]) {
-                cord_t *heap_cord = (cord_t *) malloc(sizeof(cord_t));
+                cord_t *heap_cord = (cord_t *)malloc(sizeof(cord_t));
                 heap_cord->x = cord.x;
                 heap_cord->y = cord.y;
 
@@ -1021,7 +1021,7 @@ void generate_distance_map(int dist_map[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT],
 
         sc_heap_init(&heap, CHUNK_X_WIDTH * CHUNK_Y_HEIGHT);
 
-        cord_t *pc = (cord_t *) malloc(sizeof(cord_t));
+        cord_t *pc = (cord_t *)malloc(sizeof(cord_t));
         *pc = chunk->pc_pos;
 
         sc_heap_add(&heap, 0, pc);
@@ -1105,7 +1105,7 @@ int start_pokemon_battle(chunk_t *cur_chunk, cord_t trainer_cord) {
 
         if (trainer->entity_type == RIVAL || trainer->entity_type == HIKER) {
                 trainer->movement_type = EXPLORER;
-                dir_t *dir = (dir_t*) malloc(sizeof(dir_t));
+                dir_t *dir = (dir_t *)malloc(sizeof(dir_t));
                 *dir = static_cast<dir_t>(rand() % NUM_DIRECTIONS);
                 trainer->data = dir;
         }
@@ -1303,8 +1303,8 @@ int handle_pc_movements(cord_t *next_cord, cord_t entity_pos,
                         int *valid_command, char **message,
                         int hiker_dist[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT],
                         int rival_dist[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT]) {
-        *cost_to_move =
-            get_land_cost_pc(cur_chunk->terrain[next_cord->x][next_cord->y]);
+        land_t next_land = cur_chunk->terrain[next_cord->x][next_cord->y];
+        *cost_to_move = get_land_cost_pc(next_land);
         cur_chunk->pc_pos = *next_cord;
         entity_t *entity = &cur_chunk->entities[next_cord->x][next_cord->y];
         entity_type_t entity_type = entity->entity_type;
@@ -1322,6 +1322,15 @@ int handle_pc_movements(cord_t *next_cord, cord_t entity_pos,
 
                 *next_cord = entity_pos;
                 *valid_command = 1;
+                return 0;
+        }
+
+        if (next_land == GATE) {
+                *valid_command = 0;
+                *message = "Huh";
+                // TODO
+                if (next_cord->x == 0) {
+                }
                 return 0;
         }
 
@@ -1570,7 +1579,7 @@ int do_game_tick(chunk_t *cur_chunk, int gt, int num_entities,
         cur_chunk->entities[next_cord.x][next_cord.y] = (entity_t){
             temp.entity_type, temp.movement_type, temp.defeated, temp.data};
 
-        event_t *new_event = (event_t *) malloc(sizeof(event_t));
+        event_t *new_event = (event_t *)malloc(sizeof(event_t));
         new_event->pos = next_cord;
 
         sc_heap_add(cur_chunk->event_queue, gt + cost_to_move * num_entities,
