@@ -1,3 +1,51 @@
+commit 63b2f76a842a24888fb7d13d314990bd4ec63d88
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Wed Mar 27 21:01:25 2024 -0600
+
+    PC can fly
+
+commit b1b7412bcb93a3a9502e7fce2bab067c70ef8df1
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Wed Mar 27 15:23:54 2024 -0600
+
+    PC is able to travel between chunks
+
+commit 5c0b522049b58466c3ca21a2db8863aa4c0424c6
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Wed Mar 27 14:54:37 2024 -0600
+
+    Move spawning into it's own function seperate from spawning randomly.
+
+commit fda772e25395026ed4ee47bbae96dbc6916a1481
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Wed Mar 27 14:29:40 2024 -0600
+
+    Change map when player moves to west gate
+
+commit 3cf4e386081bfd66f9001d11b32fc8a3e4f87e86
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Tue Mar 26 20:18:07 2024 -0600
+
+    Move game time into each chunk
+
+commit ac7c2e292ce5cd006aa589f35ae7bc30cc187e5c
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Tue Mar 26 19:12:17 2024 -0600
+
+    formatting
+
+commit a578984aebb731e2e49443f86a3c81abb67b40bf
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Tue Mar 26 14:32:44 2024 -0600
+
+    Sheaffer code
+
+commit 565201bd68d7cb7010e00c466dbf454ff8e98ea1
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Tue Mar 26 10:57:37 2024 -0600
+
+    Assignment 1.06 - convert to cpp
+
 commit 39fd5ff131faf6934b47b0d4fbca05cd03bea145
 Author: Jacob Duba <jacob@mooshoe.me>
 Date:   Wed Mar 20 22:17:19 2024 -0600

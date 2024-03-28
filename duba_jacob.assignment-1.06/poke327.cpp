@@ -75,7 +75,8 @@ typedef enum entity_type {
         // SWIMMER
 } entity_type_t;
 
-typedef struct entity {
+typedef class entity {
+      public:
         entity_type_t entity_type;
         entity_type_t movement_type;
         int defeated;
@@ -89,7 +90,8 @@ typedef struct event {
         cord_t pos;
 } event_t;
 
-typedef struct chunk {
+typedef class chunk {
+      public:
         land_t terrain[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT];
         int n_gate_x, s_gate_x, e_gate_y,
             w_gate_y; // TODO move out. Will never be used
