@@ -1406,6 +1406,52 @@ int display_trainers() {
         return 0;
 }
 
+void display_fly_screen(int *turn_completed, char **message,
+                        cord_t *cur_chunk_cord, int *fly_f, int *cost_to_move) {
+        char *message1 = " Flying: Enter coordinates as 'x y'";
+        char *message2 = "         Press enter to submit";
+        int x, y;
+
+        mvprintw(3, 19, "%-40s", "");
+        mvprintw(4, 19, "%-40s", message1);
+        mvprintw(5, 19, "%-40s", message2);
+        mvprintw(6, 19, "%-40s", "");
+        mvprintw(7, 19, "%-40s", "");
+
+        x = -1, y = -1;
+
+        echo();
+        curs_set(1);
+        int success = mvscanw(6, 20, "%d %d", &x, &y);
+        noecho();
+        curs_set(0);
+
+        if (x == -1 || y == -1) {
+                *message = "Invalid input. Flying canceled.";
+                *turn_completed = 0;
+                return;
+        }
+
+        if (x < WORLD_SIZE / -2 || WORLD_SIZE / 2 < x) {
+                *message = "Error: x input is out of bounds.";
+                *turn_completed = 0;
+                return;
+        }
+
+        if (y < WORLD_SIZE / -2 || WORLD_SIZE / 2 < y) {
+                *message = "Error: y input is out of bounds.";
+                *turn_completed = 0;
+                return;
+        }
+
+        cur_chunk_cord->x = x + WORLD_SIZE / 2;
+        cur_chunk_cord->y = y + WORLD_SIZE / 2;
+
+        *fly_f = 1;
+        *cost_to_move = 0;
+        *turn_completed = 1;
+}
+
 int do_tick(chunk_t *world[WORLD_SIZE][WORLD_SIZE], cord_t *cur_chunk_cord,
             int num_entities, int hiker_dist[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT],
             int rival_dist[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT], int *quit_game,
@@ -1430,6 +1476,7 @@ int do_tick(chunk_t *world[WORLD_SIZE][WORLD_SIZE], cord_t *cur_chunk_cord,
         land_t land_pc_is_on;
         int command;
         char *message;
+        int fly_f = 0;
 
         switch (entity->movement_type) {
         case PC:
@@ -1523,7 +1570,8 @@ int do_tick(chunk_t *world[WORLD_SIZE][WORLD_SIZE], cord_t *cur_chunk_cord,
                                 } else if (land_pc_is_on == POKEMON_CENTER) {
                                         display_shop("Pokemon Center");
                                 } else {
-                                        message = "No building to enter";
+                                        message = "No building "
+                                                  "to enter";
                                 }
                                 turn_completed = 0;
                                 break;
@@ -1543,6 +1591,11 @@ int do_tick(chunk_t *world[WORLD_SIZE][WORLD_SIZE], cord_t *cur_chunk_cord,
                         case 'Q':
                                 *quit_game = 1;
                                 turn_completed = 1;
+                                break;
+                        case 'f':
+                                display_fly_screen(&turn_completed, &message,
+                                                   cur_chunk_cord, &fly_f,
+                                                   &cost_to_move);
                                 break;
                         default:
                                 message = "Invalid Command";
@@ -1665,6 +1718,14 @@ int do_tick(chunk_t *world[WORLD_SIZE][WORLD_SIZE], cord_t *cur_chunk_cord,
                         world[cur_chunk_cord->x][cur_chunk_cord->y]->pc_pos =
                             cord_on_new_chunk;
                 }
+        } else if (fly_f) {
+                gen_chunk_if_not_exists(world, *cur_chunk_cord, num_trainers);
+
+                cord_t pc_pos = spawn_entity_randomly(
+                    world[cur_chunk_cord->x][cur_chunk_cord->y], PC,
+                    return_negative_one_if_not_road,
+                    --world[cur_chunk_cord->x][cur_chunk_cord->y]->tick);
+                world[cur_chunk_cord->x][cur_chunk_cord->y]->pc_pos = pc_pos;
         } else {
                 cur_chunk->entities[next_cord.x][next_cord.y] =
                     (entity_t){temp.entity_type, temp.movement_type,
@@ -1712,7 +1773,9 @@ int main(int argc, char *argv[]) {
                         printf("num_entities=%d\n", num_trainers);
                         break;
                 case ':':
-                        fprintf(stderr, "Option -%c requires an argument.\n",
+                        fprintf(stderr,
+                                "Option -%c requires an "
+                                "argument.\n",
                                 optopt);
                         return -1;
                 case '?':
