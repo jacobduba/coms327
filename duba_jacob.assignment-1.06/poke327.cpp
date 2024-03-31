@@ -1815,7 +1815,7 @@ int main(int argc, char *argv[]) {
         cbreak(); // Do not buffer inputs
         curs_set(0);
         keypad(stdscr, TRUE);
-        // start_color();
+        start_color();
         set_escdelay(0);
         noecho();
 
