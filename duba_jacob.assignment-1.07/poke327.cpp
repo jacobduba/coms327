@@ -1157,7 +1157,7 @@ void generate_distance_map(int dist_map[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT],
         sc_heap_term(&heap);
 }
 
-int render_game(chunk_t *cur_chunk, char *status) {
+int render_game(chunk_t *cur_chunk, char const *status) {
         erase();
 
         printw("--- %s ---\n", status);
@@ -1378,7 +1378,7 @@ void find_explorer_next_tile(entity_t cur_entity, cord_t entity_pos,
 
 int handle_pc_movements(cord_t *next_cord, cord_t entity_pos,
                         chunk_t *cur_chunk, int *cost_to_move,
-                        int *valid_command, char **message,
+                        int *valid_command, char const **message,
                         int hiker_dist[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT],
                         int rival_dist[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT]) {
         land_t next_land = cur_chunk->terrain[next_cord->x][next_cord->y];
@@ -1422,7 +1422,7 @@ int handle_pc_movements(cord_t *next_cord, cord_t entity_pos,
         return 0;
 }
 
-int display_shop(char *shop) {
+int display_shop(char const *shop) {
         erase();
 
         for (int i = 0; i < CHUNK_X_WIDTH; i++) {
@@ -1469,10 +1469,10 @@ int display_trainers() {
         return 0;
 }
 
-void display_fly_screen(int *turn_completed, char **message,
+void display_fly_screen(int *turn_completed, char const **message,
                         cord_t *cur_chunk_cord, int *fly_f, int *cost_to_move) {
-        char *message1 = " Flying: Enter coordinates as 'x y'";
-        char *message2 = "         Press enter to submit";
+        char const *message1 = " Flying: Enter coordinates as 'x y'";
+        char const *message2 = "         Press enter to submit";
         int x, y;
 
         mvprintw(3, 19, "%-40s", "");
@@ -1538,7 +1538,7 @@ int do_tick(chunk_t *world[WORLD_SIZE][WORLD_SIZE], cord_t *cur_chunk_cord,
         int turn_completed;
         land_t land_pc_is_on;
         int command;
-        char *message;
+        char const *message;
         int fly_f = 0;
 
         switch (entity->movement_type) {
