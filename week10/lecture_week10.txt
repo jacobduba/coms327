@@ -1,0 +1,106 @@
+* Using C and C++ in the same program.
+  C++ uses name mangling; C doesn't.  Name mangling is necessary in order to
+  allow function overloading.  Mangled names encode the formal parameters so
+  that the compiler can choose the right function based on the arguments.
+  In order for C++ to make calls to C functions or vice versa, it's necessary
+  to tell the C++ compiler not to mangle the names.  We'll need this with any
+  functions that we wish to call in both C and C++.  When compiling with a
+  C++ compiler, you tell the compiler to use a C calling convention (no name
+  mangling) by declaring the function 'extern "C"', or by putting the
+  declaration inside an 'extern "C"' block.  Usually this is done with the
+  following construction:
+
+    #ifdef __cplusplus
+    extern "C" {
+    #endif
+
+    /* Prototypes of functions that you want to use in C and C++ */
+
+    #ifdef __cplusplus
+    }
+    #endif
+
+  C doesn't know anything about 'extern "C"', so the guards around this block
+  ensure that when you include this header in C code, that extra stuff is
+  stripped out by the preprocessor, but when used in C++ code, it remains.
+* String class example
+  In which we develop a string class, string229.
+
+* Overloading
+  Functions
+    Functions can have the same name, as long as they have different
+    formal parameters.  Compiler figures out which one to call based on
+    actual parameters
+  Operators
+    Operators are overloaded by defining special "operator<operator>()"
+    functions, where <operator> is the actual operator, for instance,
+    overload the addition operator by defining operator+().
+* Classes
+  public
+    Anybody can see this field
+  private
+    Only members of this class can see it
+  protected
+    Only this class and subclasses can see it
+  friend
+    Your friends have full access to your privates.
+* Dynamic allocation
+** malloc and free
+   Just like in C: allocate memory and return it to the heap.
+                   work fine on primitive things
+                   Don't work on instances of classes
+** new and delete
+   new: Allocates storage like malloc, but calls the constructor
+   delete: calls the destructor before deleting
+* Destructors
+  Automatically called whenever an instance of a class leaves scope or when
+  we use the delete operator on a pointer to a class object.
+* String class example
+  In which we develop a string class, string229.
+  We're finally going to finish it today
+* std::string
+  #include <string>
+  std::string s;
+  string s; /* if using namespace std; */
+* Inheritance
+* Useful C++ STL stuff
+** ifstream
+   #include <ifstream>
+   ifstream i; // i.open(file)
+   ifstream i(file);
+*** peek()
+    i.peek();
+    Allows you to look at the next character (byte) in the stream without
+    removing it from the stream.
+*** get()
+    Returns and consumes the next character in the stream.
+*** getline()
+    Two getline()s in C++
+    std::istream::getline()
+      i.getline(char *s, int size)
+      string has to be big enough
+      Read max size number of bytes or to end of line, whichever comes first
+      Always null terminated; newline included if read
+
+      std::getline(istream &, std::string &)
+      std::getline(istream &, std::string &, char delim)
+      uses a string object, which can grow.
+      Does not include the newline (delimiter)!
+*** operator>>()
+    Skips leading whitespace, then reads until the next whitespace.
+    Use iomanip to change delimiter
+**** Use iomanip to change behavior of >>
+** stringstream
+   Similar to Java's string builder.  Let's you use << to build strings.  Use
+      str() to return a reference to a string.
+
+** Containers
+*** vector
+    Similar to Java ArrayLists.
+    Declare with templated (parametrized) type:
+    vector<int> v;
+*** Iterators
+    inner class in a container or string:
+    vector<int>::iterator vi;
+    Initialize with begin(), iterate until end(), advance with ++, access
+      with *

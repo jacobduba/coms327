@@ -1,13 +1,9 @@
 #include "sc_heap.h"
+#include <climits>
+#include <cstdlib>
+#include <ctime>
 #include <curses.h>
 #include <getopt.h>
-#include <limits.h>
-#include <linux/limits.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
-#include <unistd.h>
 
 // Length and height for the world
 #define WORLD_SIZE 401
