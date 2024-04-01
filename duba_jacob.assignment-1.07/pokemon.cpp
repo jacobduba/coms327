@@ -36,6 +36,38 @@ std::ostream &operator<<(std::ostream &o, const pokemon &p) {
                  << "]";
 }
 
+std::istream &operator>>(std::istream &i, const pokemon &p) {
+        std::string id;
+        std::string identifier;
+        std::string species_id;
+        std::string height;
+        std::string weight;
+        std::string base_experience;
+        std::string order;
+        std::string is_default;
+
+        pokemon pokemon;
+
+        getline(i, id, ',');
+        pokemon.id = std::stoi(id);
+        getline(i, identifier, ',');
+        pokemon.identifier = identifier;
+        getline(i, species_id, ',');
+        pokemon.species_id = std::stoi(species_id);
+        getline(i, height, ',');
+        pokemon.height = std::stoi(height);
+        getline(i, weight, ',');
+        pokemon.weight = std::stoi(weight);
+        getline(i, base_experience, ',');
+        pokemon.base_experience = std::stoi(base_experience);
+        getline(i, order, ',');
+        pokemon.order = std::stoi(order);
+        getline(i, is_default);
+        pokemon.is_default = std::stoi(is_default);
+
+        return i;
+}
+
 int load_pokemon(std::vector<pokemon> &poke_list) {
         std::string loc;
 
@@ -49,34 +81,12 @@ int load_pokemon(std::vector<pokemon> &poke_list) {
         std::string firstline;
         getline(file, firstline);
 
-        std::string id;
-        std::string identifier;
-        std::string species_id;
-        std::string height;
-        std::string weight;
-        std::string base_experience;
-        std::string order;
-        std::string is_default;
-
         while (file.peek() != -1) {
                 pokemon pokemon;
 
-                getline(file, id, ',');
-                pokemon.id = std::stoi(id);
-                getline(file, identifier, ',');
-                pokemon.identifier = identifier;
-                getline(file, species_id, ',');
-                pokemon.species_id = std::stoi(species_id);
-                getline(file, height, ',');
-                pokemon.height = std::stoi(height);
-                getline(file, weight, ',');
-                pokemon.weight = std::stoi(weight);
-                getline(file, base_experience, ',');
-                pokemon.base_experience = std::stoi(base_experience);
-                getline(file, order, ',');
-                pokemon.order = std::stoi(order);
-                getline(file, is_default);
-                pokemon.is_default = std::stoi(is_default);
+                file >> pokemon;
+
+                std::cout << pokemon;
 
                 poke_list.push_back(pokemon);
         }

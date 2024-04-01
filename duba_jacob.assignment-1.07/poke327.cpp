@@ -1813,9 +1813,18 @@ int main(int argc, char *argv[]) {
                 load_pokemon(poke_list);
 
                 std::vector<pokemon>::iterator vi;
-                for (vi = poke_list.begin(); vi != poke_list.end(); vi++) {
-                        std::cout << *vi << std::endl;
-                }
+                // for (vi = poke_list.begin(); vi != poke_list.end(); vi++) {
+                //         std::cout << *vi << std::endl;
+                // }
+                // } else if (input == "moves") {
+                //         std::vector<move> move_list;
+                //         load_pokemon(move_list);
+
+                //         std::vector<move>::iterator vi;
+                //         for (vi = move_list.begin(); vi != move_list.end();
+                //         vi++) {
+                //                 std::cout << *vi << std::endl;
+                //         }
         }
 
         return 0;
