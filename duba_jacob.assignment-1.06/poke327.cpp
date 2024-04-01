@@ -101,53 +101,114 @@ typedef class chunk {
         int tick;
 } chunk_t;
 
-char land_t_to_char(land_t land) {
+enum colors { BLUE = 1, GREEN, WHITE, CYAN, YELLOW, MAGENTA, RED };
+
+void init_color_pairs() {
+        init_pair(BLUE, COLOR_BLUE, COLOR_BLACK);
+        init_pair(GREEN, COLOR_GREEN, COLOR_BLACK);
+        init_pair(WHITE, COLOR_WHITE, COLOR_BLACK);
+        init_pair(CYAN, COLOR_CYAN, COLOR_BLACK);
+        init_pair(YELLOW, COLOR_YELLOW, COLOR_BLACK);
+        init_pair(MAGENTA, COLOR_MAGENTA, COLOR_BLACK);
+        init_pair(RED, COLOR_RED, COLOR_BLACK);
+}
+
+void print_land_t(land_t land) {
         switch (land) {
         case EMPTY:
-                return 'E';
+                printw("E");
+                break;
         case BOULDER:
-                return '%';
+                attron(COLOR_PAIR(WHITE));
+                printw("%%");
+                attroff(COLOR_PAIR(WHITE));
+                break;
         case FOREST:
-                return '^';
+                attron(COLOR_PAIR(GREEN));
+                printw("^");
+                attroff(COLOR_PAIR(GREEN));
+                break;
         case MOUNTAIN:
-                return '%';
+                printw("%%");
+                break;
         case TALL_GRASS:
-                return ':';
+                attron(COLOR_PAIR(GREEN));
+                printw(":");
+                attroff(COLOR_PAIR(GREEN));
+                break;
         case SHORT_GRASS:
-                return '.';
+                attron(COLOR_PAIR(GREEN));
+                printw(".");
+                attroff(COLOR_PAIR(GREEN));
+                break;
         case WATER:
-                return '~';
+                attron(COLOR_PAIR(BLUE));
+                printw("~");
+                attroff(COLOR_PAIR(BLUE));
+                break;
         case ROAD:
-                return '#';
+                attron(COLOR_PAIR(YELLOW));
+                printw("#");
+                attroff(COLOR_PAIR(YELLOW));
+                break;
         case GATE:
-                return '#';
+                attron(COLOR_PAIR(YELLOW));
+                printw("#");
+                attroff(COLOR_PAIR(YELLOW));
+                break;
         case POKEMON_CENTER:
-                return 'C';
+                attron(COLOR_PAIR(MAGENTA));
+                printw("C");
+                attroff(COLOR_PAIR(MAGENTA));
+                break;
         case POKEMART:
-                return 'M';
+                attron(COLOR_PAIR(MAGENTA));
+                printw("M");
+                attroff(COLOR_PAIR(MAGENTA));
+                break;
         }
 }
 
-char entity_type_t_to_char(entity_type_t entity_type) {
+void print_entity_t(entity_type_t entity_type) {
         switch (entity_type) {
         case NO_ENTITY:
-                return 'E';
+                printw("E");
+                break;
         case PC:
-                return '@';
+                attron(COLOR_PAIR(CYAN));
+                printw("@");
+                attroff(COLOR_PAIR(CYAN));
+                break;
         case HIKER:
-                return 'h';
+                attron(COLOR_PAIR(RED));
+                printw("h");
+                attroff(COLOR_PAIR(RED));
+                break;
         case RIVAL:
-                return 'r';
+                attron(COLOR_PAIR(RED));
+                printw("r");
+                attroff(COLOR_PAIR(RED));
+                break;
         case PACER:
-                return 'p';
+                attron(COLOR_PAIR(RED));
+                printw("p");
+                attroff(COLOR_PAIR(RED));
+                break;
         case WANDERER:
-                return 'w';
+                attron(COLOR_PAIR(RED));
+                printw("w");
+                attroff(COLOR_PAIR(RED));
+                break;
         case SENTRY:
-                return 's';
+                attron(COLOR_PAIR(RED));
+                printw("s");
+                attroff(COLOR_PAIR(RED));
+                break;
         case EXPLORER:
-                return 'e';
-                // case SWIMMER:
-                //         return 'm';
+                attron(COLOR_PAIR(RED));
+                printw("e");
+                attroff(COLOR_PAIR(RED));
+                break;
         }
 }
 
@@ -297,22 +358,22 @@ int get_land_cost_wanderer(land_t type) {
 }
 
 /**
- * If an entity is at pos, return entity.
- * Else return land at the pos.
+ * If an entity is at pos, print entity.
+ * Else print land at the pos.
  */
-char get_char_for_pos(cord_t pos, chunk_t *chunk) {
+void print_pos(cord_t pos, chunk_t *chunk) {
         if (chunk->entities[pos.x][pos.y].entity_type != NO_ENTITY) {
-                return entity_type_t_to_char(
-                    chunk->entities[pos.x][pos.y].entity_type);
+                print_entity_t(chunk->entities[pos.x][pos.y].entity_type);
+                return;
         }
 
-        return land_t_to_char(chunk->terrain[pos.x][pos.y]);
+        print_land_t(chunk->terrain[pos.x][pos.y]);
 }
 
 void print_chunk(chunk_t *chunk) {
         for (int y = 0; y < CHUNK_Y_HEIGHT; y++) {
                 for (int x = 0; x < CHUNK_X_WIDTH; x++) {
-                        printw("%c", get_char_for_pos((cord_t){x, y}, chunk));
+                        print_pos((cord_t){x, y}, chunk);
                 }
                 printw("\n");
         }
@@ -1818,6 +1879,8 @@ int main(int argc, char *argv[]) {
         start_color();
         set_escdelay(0);
         noecho();
+
+        init_color_pairs();
 
         int quit_game = 0;
         while (!quit_game) {
