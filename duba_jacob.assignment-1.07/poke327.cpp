@@ -1,3 +1,4 @@
+#include "pokemon.h"
 #include "sc_heap.h"
 #include <climits>
 #include <cstdlib>
@@ -1801,6 +1802,9 @@ int do_tick(chunk_t *world[WORLD_SIZE][WORLD_SIZE], cord_t *cur_chunk_cord,
 }
 
 int main(int argc, char *argv[]) {
+        read_pokemon();
+        return 0;
+
         int seed;
 
         chunk_t *world[WORLD_SIZE][WORLD_SIZE];
