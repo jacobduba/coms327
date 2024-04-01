@@ -5,6 +5,7 @@
 #include <ctime>
 #include <curses.h>
 #include <getopt.h>
+#include <iostream>
 
 // Length and height for the world
 #define WORLD_SIZE 401
@@ -1802,7 +1803,21 @@ int do_tick(chunk_t *world[WORLD_SIZE][WORLD_SIZE], cord_t *cur_chunk_cord,
 }
 
 int main(int argc, char *argv[]) {
-        read_pokemon();
+        std::string input;
+
+        std::cout << "Enter file you want to parse: ";
+        std::cin >> input;
+
+        if (input == "pokemon") {
+                std::vector<pokemon> poke_list;
+                load_pokemon(poke_list);
+
+                std::vector<pokemon>::iterator vi;
+                for (vi = poke_list.begin(); vi != poke_list.end(); vi++) {
+                        std::cout << *vi << std::endl;
+                }
+        }
+
         return 0;
 
         int seed;
