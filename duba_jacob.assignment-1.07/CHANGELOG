@@ -1,0 +1,512 @@
+commit 63b2f76a842a24888fb7d13d314990bd4ec63d88
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Wed Mar 27 21:01:25 2024 -0600
+
+    PC can fly
+
+commit b1b7412bcb93a3a9502e7fce2bab067c70ef8df1
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Wed Mar 27 15:23:54 2024 -0600
+
+    PC is able to travel between chunks
+
+commit 5c0b522049b58466c3ca21a2db8863aa4c0424c6
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Wed Mar 27 14:54:37 2024 -0600
+
+    Move spawning into it's own function seperate from spawning randomly.
+
+commit fda772e25395026ed4ee47bbae96dbc6916a1481
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Wed Mar 27 14:29:40 2024 -0600
+
+    Change map when player moves to west gate
+
+commit 3cf4e386081bfd66f9001d11b32fc8a3e4f87e86
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Tue Mar 26 20:18:07 2024 -0600
+
+    Move game time into each chunk
+
+commit ac7c2e292ce5cd006aa589f35ae7bc30cc187e5c
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Tue Mar 26 19:12:17 2024 -0600
+
+    formatting
+
+commit a578984aebb731e2e49443f86a3c81abb67b40bf
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Tue Mar 26 14:32:44 2024 -0600
+
+    Sheaffer code
+
+commit 565201bd68d7cb7010e00c466dbf454ff8e98ea1
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Tue Mar 26 10:57:37 2024 -0600
+
+    Assignment 1.06 - convert to cpp
+
+commit 39fd5ff131faf6934b47b0d4fbca05cd03bea145
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Wed Mar 20 22:17:19 2024 -0600
+
+    Final tidbits for submission
+
+commit 23b41499432c168f0ce28752bf9281ea9acb0349
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Wed Mar 20 21:38:47 2024 -0600
+
+    Turned on color. Will need to refactor printing to enable color
+
+commit 3f7da92a4b0e03823edcf60d9545069f513ab1d3
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Wed Mar 20 21:06:52 2024 -0600
+
+    Can enter buildings now
+
+commit 5cb37c0be78947af97258768b9f07af106880591
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Wed Mar 20 19:03:35 2024 -0600
+
+    Pokemon battles working
+
+commit 6f33d186fdef24509ac412ed0221169f45ce3290
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Wed Mar 20 18:46:32 2024 -0600
+
+    Bug fixed
+
+commit c86bc25e31a0005b42126d0e6c55027de25e3fea
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Wed Mar 20 18:36:05 2024 -0600
+
+    Pokemon attempt battle -> don't get defeated
+
+commit 6f06f74e2b8cc51f1366ce09d63452c4dbb3d984
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Wed Mar 20 17:44:51 2024 -0600
+
+    Move pokemon battle into seperate function
+
+commit 698e1cdf83757091660af91e2cebd7ef0535e85a
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Wed Mar 20 17:28:24 2024 -0600
+
+    Entities can be defeated
+
+commit eb6c915dc77d84197bf778237ef28363f3a4b293
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Wed Mar 20 16:56:57 2024 -0600
+
+    After battle ends, rivals switch to explorers
+
+commit c7cf64fa0adc833cb80bef81c1cac6eff9f8779f
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Wed Mar 20 16:43:17 2024 -0600
+
+    Add movement type. Also set esc delay to 0
+
+commit 80499bccf2f2bbc53ddfe24d8ebb60aea49d6b29
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Wed Mar 20 16:23:34 2024 -0600
+
+    Placeholder pokemon battle when running into rivals
+
+commit 59fa9cd75195679f9cbbdef78cdce7b0dbb04b25
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Tue Mar 19 22:47:33 2024 -0600
+
+    Full movement for PC
+
+commit aee9c7aad19336e095a8dc6ed51cda596125625e
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Tue Mar 19 22:41:41 2024 -0600
+
+    Fix bug where pacers don't move back and forth
+    
+    Check to see if land is valid always went off
+
+commit af8cbd035fa3bbf3e696458138f9a1519e15949e
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Tue Mar 19 22:30:52 2024 -0600
+
+    Move PC movements into seperate function
+
+commit eae693e184a04a160871cf16f71933119fd78300
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Tue Mar 19 21:36:17 2024 -0600
+
+    Only allow valid movements
+
+commit a01c954e8a3b431f4b6175df1964c22408bd5525
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Tue Mar 19 21:31:08 2024 -0600
+
+    Fix refactoring that doesn't set cost_to_move properly
+
+commit 9fcdcab446abef9e41ffe935bba63c76162a705e
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Tue Mar 19 21:08:37 2024 -0600
+
+    Various refactorings
+
+commit 7fc31c447bebe0972d22e9857ae94205f58445b7
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Tue Mar 19 20:05:19 2024 -0600
+
+    Make players unable to traverse gates, for the time being.
+
+commit 824dffdeac9ecc68f6d1a8965d6515784ab108bf
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Tue Mar 19 12:21:46 2024 -0600
+
+    Handle invalid command
+
+commit 9786b701440b74c5cb683e4ee8a1bfc67699d80e
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Tue Mar 19 11:42:09 2024 -0600
+
+    Status bar dynamically set
+
+commit d077f77b1f0f05d5580ad3aaed8256bd7bd19233
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Mon Mar 18 20:37:21 2024 -0600
+
+    Reduced duplicate code when moving entities
+
+commit 41c5a732dbe50ea96160ab4c34be235228cf44bd
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Mon Mar 18 17:57:43 2024 -0600
+
+    Free current chunk
+
+commit 24fef7dd091e865f49442ad5bffce7c0ef23d4a6
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Mon Mar 18 17:54:21 2024 -0600
+
+    Quit on q
+
+commit b2e4df7fb2d0e3cfdfd4558004ce92dc63fe32ff
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Mon Mar 18 12:44:54 2024 -0600
+
+    Render using ncurses
+
+commit 43c23b67714f72f336dff67dda74991b6632d12a
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Sun Mar 10 19:19:30 2024 -0500
+
+    Week 4 answers
+
+commit 8d562ff2ebe291e6c4c0851efbd7ca4df82f3ea9
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Tue Mar 5 20:40:31 2024 -0600
+
+    Removes memory leaks
+
+commit cf2541f63a218fef4ea7b5b28b678e7acaff9dc1
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Tue Mar 5 15:20:12 2024 -0600
+
+    1.05 start. Trying to fix memory leak
+
+commit 1a476e412abfdc70e119798e4b45c968942bce27
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Thu Feb 29 02:14:07 2024 -0600
+
+    Prevent wanderers from spawning on roads
+
+commit 234e0f449d065598ab1917b48c0ca38907722601
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Thu Feb 29 02:07:50 2024 -0600
+
+    Wanderer, pacer, and explorers
+
+commit 34aeba506322a965557a5e785539a915644cda14
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Wed Feb 28 23:25:26 2024 -0600
+
+    Working hikers and rivals
+
+commit cc773518503f05e95bce491960d82e2ac7f7cc31
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Wed Feb 28 17:29:19 2024 -0600
+
+    Spawn trainers on map
+
+commit a02df899649ac4ebbc01ead851fd14c7d7b3ca22
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Wed Feb 28 15:55:53 2024 -0600
+
+    Place rival and hiker in entities array. Moving to 2d array
+
+commit 0bc7ee53199110219af0e0968f6d7f1e0d7510c2
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Wed Feb 28 14:12:03 2024 -0600
+
+    Stores entities in array entity_t. This array gets printed
+
+commit b2bb11b7f4eef3b68a75868ce3976d0fa66d7a9d
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Mon Feb 26 17:06:23 2024 -0600
+
+    Introduces a numtrainers variable.
+    numtrainers can be set using an option!
+    However it cannot be greater than 99.
+
+commit fa5bd1f43e20e92d3b42a131a049d58d7ae9a593
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Mon Feb 26 13:22:17 2024 -0600
+
+    Starting week 7
+
+commit f02086d75d99e577206aee0cbfe42dff50daf42d
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Wed Feb 21 21:52:39 2024 -0600
+
+    Final changes for 1.03 submission
+
+commit 3ab9ca86443676335d659519112658ee652e244f
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Wed Feb 21 21:51:13 2024 -0600
+
+    Refactored to reuse hiker_dist code for rival_dist
+
+commit 3131df923cc7bef46f720c17610ad3854a0b7f0e
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Mon Feb 19 18:55:19 2024 -0600
+
+    Working hiker_dist
+
+commit b6bca3718207dda787cc5b0100b2408dd853bd55
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Sun Feb 18 19:31:29 2024 -0600
+
+    Move terrain from chars to enum
+    New requirements allow different land types to be repersented by the same icon.
+    
+    So, terrain is now repersented by enums which I then convert to characters when printing.
+
+commit 8c7d6beeda40a3c13846188aae83f2ff98d02905
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Sun Feb 18 19:19:48 2024 -0600
+
+    Remove terrain explorer
+
+commit ebde594bfdfb94d3fa86e49d9aff8d87574165ec
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Sun Feb 18 19:03:35 2024 -0600
+
+    Changes
+
+commit 9b1246af0edc372437daa16fc849e970d13c80db
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Sat Feb 10 21:15:22 2024 -0600
+
+    Refactor to reduce indents
+
+commit b3029de5d16fbc0dade2a8ff4200940d514049cf
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Sat Feb 10 20:12:57 2024 -0600
+
+    Move to 8 space tabs
+    My belief is that 8 space tabs will reduce nesting.
+    I have been getting confused by nesting.
+
+commit 60d24ab8edbbb7a9a133bb66f8472ccd20a87cf1
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Sat Feb 10 14:05:27 2024 -0600
+
+    Fix bug causing some times not to be explored
+    I'm creating noise on the map by sometimes not exploring with BFS.
+    
+    However, a tile would remain empty if all four surrounding tiles choose not to explore.
+    
+    The fix: if not exploring, readd current tile to queue.
+
+commit f7a19ad91d247b7e009dba000ebe59731f6f43f7
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Thu Feb 8 13:08:48 2024 -0600
+
+    Noise on edges of land types.
+    
+    Introduced noise on the edges of land to make the
+    maps more interesting.
+    
+    This works by only growing the seed 4/5ths of the time.
+
+commit a8b40b05c46c0661153341a9c0c35b3edfb23b57
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Wed Feb 7 22:54:12 2024 -0600
+
+    Changed file name and updated README
+    
+    These changes are to improve the expirence of the TAs grading this.
+
+commit 5aad706fed15644052767bf17260c25aec70be83
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Wed Feb 7 22:41:00 2024 -0600
+
+    Place buildings based on distance from the center
+
+commit 1fe93363b50f4aed9c3e9ffc21d1ba9178da42bb
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Wed Feb 7 22:06:15 2024 -0600
+
+    Added commands and movement.
+
+commit eda7456ca7e1315ffc11686f885e441a21b4357f
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Wed Feb 7 19:06:19 2024 -0600
+
+    Buildings no longer overlap + prevent infinite loop
+    So buildings could overlap. So the center could be covered by the pokemart.
+    The solution for this was to turn a placement blacklist into a placement whitelist (eg. now buildings must be placed om one of the (5?) land types.
+    
+    The generator also does not infinite loop if there is not suitable place, like it's all water.
+
+commit 5385c22757bd1ce6f4c47e44e9baf6434543a8e6
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Wed Feb 7 11:07:09 2024 -0600
+
+    This commit allows you to place gates at certain coordinates.
+    
+    If the gate's coordinate is invalid, the gate will not be created.
+    A path will not connect to that gate anymore.
+
+commit a1202233e0238813397a841f2f485c574a5bc411
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Tue Feb 6 13:53:01 2024 -0600
+
+    Week 4
+
+commit 6827a876908af16da3d275932121d7d76770d38e
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Mon Feb 5 13:37:22 2024 -0600
+
+    Refactor 2D arrays to as [x][y] instead of [y][x]
+    I store coordinates as (x, y).
+    I just fixed a bug where I wrote [x][y] instead of [y][x] in 2d arrays.
+    So it became clear that coordinates should all follow the same convention.
+    So I choose the most popular convention (x, y).
+
+commit ddef2ee71f25c9bafc45a3915ac7769f3f05f0ac
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Mon Feb 5 13:00:10 2024 -0600
+
+    Got Dijkstra's working!
+    
+    This is really funny, I had my x and ys mixed up on the loop that initialized the visited 2D array.
+
+commit 4c04895c56193aa1dec089a3c83d2704516f7312
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Thu Feb 1 12:54:28 2024 -0600
+
+    Sheaffer's code
+
+commit 60799e496784b179217e548d405feaefe37e7048
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Thu Feb 1 10:11:19 2024 -0600
+
+    Changes to improve submission
+
+commit ea0b2b4c427f0b8cccd22cf34d5084951d691a24
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Wed Jan 31 22:49:56 2024 -0600
+
+    Getting ready for submission!
+
+commit 8694737417f28000e400210d640f63574ea34cc9
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Wed Jan 31 22:38:59 2024 -0600
+
+    Attempt at road generation
+
+commit 770a50d2a8916451a257d48da3f79c339ac663b7
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Wed Jan 31 13:40:00 2024 -0600
+
+    Place buildings
+
+commit 13209c041aca5f3d223b8b10aa6ba0408db88fed
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Tue Jan 30 16:49:33 2024 -0600
+
+    Class 1/30
+
+commit 35f72e4fd3b3d6930618fc0b2b57aab2d2570f35
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Mon Jan 29 17:52:50 2024 -0600
+
+    Path generation
+
+commit f4dbfbb90ca8095e51be3948775825b071b552fb
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Mon Jan 29 16:47:17 2024 -0600
+
+    Refactored to make cords more generic
+
+commit 4f28c2c040117a9148e10bf03c619607dbb78cf8
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Mon Jan 29 15:39:18 2024 -0600
+
+    Working seed generation
+    Got it working!
+
+commit 8731632d92336edcc56b80925a97c7184b1e022a
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Mon Jan 29 10:19:56 2024 -0600
+
+    I attempted seeding - giving up.
+    
+    Seeding would require BFS which uses a queue. C doesn't have built-in support for queues?
+    Then laying the path would use Dijkstra's, which uses a heap. C doesn't support that either.
+
+commit 7b02e2a0e41bf8e41fe1e503bbb9ad46ad67a6be
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Sat Jan 27 20:31:14 2024 -0600
+
+    Changed the assignment folder names.
+    My assignment folder names were not how they should
+    be submitted.
+
+commit 510dfa889856d7792eacf502fa88460435dbd3fe
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Fri Jan 26 17:14:25 2024 -0600
+
+    Print out the terrain, misc.
+    
+    This commit prints out the terrain.
+    The terrain is populated with random terrain types.
+    
+    Also this commit sets up the Makefile
+
+commit 12215e140cb3ba994aaf082b2efd1b78e72a0e17
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Fri Jan 26 15:47:18 2024 -0600
+
+    Gitignore updates
+
+commit 4b025847b18790883280d715568984912d967aef
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Thu Jan 25 13:53:21 2024 -0600
+
+    Class Jan 25
+
+commit 8c2de4d37e2718f7b087113f7b5e3e1714e4f422
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Tue Jan 23 13:27:40 2024 -0600
+
+    Tarballs + Updated Changelog
+
+commit 0246c5cfa0df52cc4f4943113ad64d8510eff391
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Tue Jan 16 13:51:37 2024 -0600
+
+    Use version control.
+
+commit 33323c229fa57da201d0b1570b0eded4cfb550e8
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Fri Jan 12 17:15:32 2024 -0600
+
+    Commit
