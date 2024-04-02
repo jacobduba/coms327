@@ -36,7 +36,7 @@ std::ostream &operator<<(std::ostream &o, const pokemon &p) {
                  << "]";
 }
 
-std::istream &operator>>(std::istream &i, const pokemon &p) {
+std::istream &operator>>(std::istream &i, pokemon &p) {
         std::string id;
         std::string identifier;
         std::string species_id;
@@ -46,24 +46,22 @@ std::istream &operator>>(std::istream &i, const pokemon &p) {
         std::string order;
         std::string is_default;
 
-        pokemon pokemon;
-
         getline(i, id, ',');
-        pokemon.id = std::stoi(id);
+        p.id = std::stoi(id);
         getline(i, identifier, ',');
-        pokemon.identifier = identifier;
+        p.identifier = identifier;
         getline(i, species_id, ',');
-        pokemon.species_id = std::stoi(species_id);
+        p.species_id = std::stoi(species_id);
         getline(i, height, ',');
-        pokemon.height = std::stoi(height);
+        p.height = std::stoi(height);
         getline(i, weight, ',');
-        pokemon.weight = std::stoi(weight);
+        p.weight = std::stoi(weight);
         getline(i, base_experience, ',');
-        pokemon.base_experience = std::stoi(base_experience);
+        p.base_experience = std::stoi(base_experience);
         getline(i, order, ',');
-        pokemon.order = std::stoi(order);
+        p.order = std::stoi(order);
         getline(i, is_default);
-        pokemon.is_default = std::stoi(is_default);
+        p.is_default = std::stoi(is_default);
 
         return i;
 }
@@ -85,8 +83,6 @@ int load_pokemon(std::vector<pokemon> &poke_list) {
                 pokemon pokemon;
 
                 file >> pokemon;
-
-                std::cout << pokemon;
 
                 poke_list.push_back(pokemon);
         }
