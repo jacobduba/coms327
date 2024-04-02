@@ -75,30 +75,6 @@ std::istream &operator>>(std::istream &i, pokemon_data &p) {
         return i;
 }
 
-int load_pokemon(std::vector<pokemon_data> &poke_list) {
-        std::string loc;
-
-        if (get_file_path(&loc, "pokemon.csv")) {
-                std::cout << "pokemon.csv does not exist" << std::endl;
-                return 1;
-        }
-
-        std::ifstream file(loc.c_str());
-
-        std::string firstline;
-        getline(file, firstline);
-
-        while (file.peek() != -1) {
-                pokemon_data pokemon;
-
-                file >> pokemon;
-
-                poke_list.push_back(pokemon);
-        }
-
-        return 0;
-}
-
 std::ostream &operator<<(std::ostream &o, const move_data &m) {
         return o << "move[id: " << m.id << ", identifier: " << m.identifier
                  << ", generation_id: " << m.generation_id
@@ -166,28 +142,4 @@ std::istream &operator>>(std::istream &i, move_data &m) {
         std::cout << m << std::endl;
 
         return i;
-}
-
-int load_moves(std::vector<move_data> &move_list) {
-        std::string loc;
-
-        if (get_file_path(&loc, "moves.csv")) {
-                std::cout << "moves.csv does not exist" << std::endl;
-                return 1;
-        }
-
-        std::ifstream file(loc.c_str());
-
-        std::string firstline;
-        getline(file, firstline);
-
-        while (file.peek() != -1) {
-                move_data move;
-
-                file >> move;
-
-                move_list.push_back(move);
-        }
-
-        return 0;
 }

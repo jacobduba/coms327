@@ -1810,7 +1810,7 @@ int main(int argc, char *argv[]) {
 
         if (input == "pokemon") {
                 std::vector<pokemon_data> poke_list;
-                load_pokemon(poke_list);
+                load_file<pokemon_data>(poke_list, "pokemon.csv");
 
                 std::vector<pokemon_data>::iterator vi;
                 for (vi = poke_list.begin(); vi != poke_list.end(); vi++) {
@@ -1818,7 +1818,7 @@ int main(int argc, char *argv[]) {
                 }
         } else if (input == "moves") {
                 std::vector<move_data> move_list;
-                load_moves(move_list);
+                load_file<move_data>(move_list, "moves.csv");
 
                 std::vector<move_data>::iterator vi;
                 for (vi = move_list.begin(); vi != move_list.end(); vi++) {

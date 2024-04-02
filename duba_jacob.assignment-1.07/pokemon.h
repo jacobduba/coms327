@@ -1,5 +1,9 @@
+#include <fstream>
+#include <iostream>
 #include <string>
 #include <vector>
+
+int get_file_path(std::string *loc, std::string file);
 
 struct pokemon_data {
         int id;
@@ -14,7 +18,7 @@ struct pokemon_data {
 
 std::ostream &operator<<(std::ostream &o, const pokemon_data &p);
 
-std::istream &operator>>(std::istream &i, const pokemon_data &p);
+std::istream &operator>>(std::istream &i, pokemon_data &p);
 
 int load_pokemon(std::vector<pokemon_data> &pv);
 
@@ -38,21 +42,28 @@ struct move_data {
 
 std::ostream &operator<<(std::ostream &o, const move_data &m);
 
-std::istream &operator>>(std::istream &o, const move_data &m);
+std::istream &operator>>(std::istream &o, move_data &m);
 
-int load_moves(std::vector<move_data> &mv);
+template <class T> int load_file(std::vector<T> &list, std::string file_name) {
+        std::string loc;
 
-struct pokemon_move_data {
-        int pokemon_id;
-        int version_group_id;
-        int move_id;
-        int pokemon_move_method_id;
-        int level;
-        int order;
-};
+        if (get_file_path(&loc, file_name)) {
+                std::cout << file_name + " does not exist" << std::endl;
+                return 1;
+        }
 
-std::ostream &operator<<(std::ostream &o, const pokemon_move_data &pm);
+        std::ifstream file(loc.c_str());
 
-std::istream &operator>>(std::istream &o, const pokemon_move_data &pm);
+        std::string firstline;
+        getline(file, firstline);
 
-int load_moves(std::vector<pokemon_move_data> &pmv);
+        while (file.peek() != -1) {
+                T t;
+
+                file >> t;
+
+                list.push_back(t);
+        }
+
+        return 0;
+}
