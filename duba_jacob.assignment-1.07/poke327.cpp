@@ -1809,22 +1809,21 @@ int main(int argc, char *argv[]) {
         std::cin >> input;
 
         if (input == "pokemon") {
-                std::vector<pokemon> poke_list;
+                std::vector<pokemon_data> poke_list;
                 load_pokemon(poke_list);
 
-                std::vector<pokemon>::iterator vi;
+                std::vector<pokemon_data>::iterator vi;
                 for (vi = poke_list.begin(); vi != poke_list.end(); vi++) {
                         std::cout << *vi << std::endl;
                 }
-                // } else if (input == "moves") {
-                //         std::vector<move> move_list;
-                //         load_pokemon(move_list);
+        } else if (input == "moves") {
+                std::vector<move_data> move_list;
+                load_moves(move_list);
 
-                //         std::vector<move>::iterator vi;
-                //         for (vi = move_list.begin(); vi != move_list.end();
-                //         vi++) {
-                //                 std::cout << *vi << std::endl;
-                //         }
+                std::vector<move_data>::iterator vi;
+                for (vi = move_list.begin(); vi != move_list.end(); vi++) {
+                        std::cout << *vi << std::endl;
+                }
         }
 
         return 0;
