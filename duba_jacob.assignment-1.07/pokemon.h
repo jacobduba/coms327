@@ -5,45 +5,6 @@
 
 int get_file_path(std::string *loc, std::string file);
 
-struct pokemon_data {
-        int id;
-        std::string identifier;
-        int species_id;
-        int height;
-        int weight;
-        int base_experience;
-        int order;
-        int is_default;
-};
-
-std::ostream &operator<<(std::ostream &o, const pokemon_data &p);
-
-std::istream &operator>>(std::istream &i, pokemon_data &p);
-
-int load_pokemon(std::vector<pokemon_data> &pv);
-
-struct move_data {
-        int id;
-        std::string identifier;
-        int generation_id;
-        int type_id;
-        int power;
-        int pp;
-        int accuracy;
-        int priority;
-        int target_id;
-        int damage_class_id;
-        int effect_id;
-        int effect_chance;
-        int contest_type_id;
-        int contest_effect_id;
-        int super_contest_effect_id;
-};
-
-std::ostream &operator<<(std::ostream &o, const move_data &m);
-
-std::istream &operator>>(std::istream &o, move_data &m);
-
 template <class T> int load_file(std::vector<T> &list, std::string file_name) {
         std::string loc;
 
@@ -67,3 +28,100 @@ template <class T> int load_file(std::vector<T> &list, std::string file_name) {
 
         return 0;
 }
+
+struct pokemon_data {
+        int id;
+        std::string identifier;
+        int species_id;
+        int height;
+        int weight;
+        int base_experience;
+        int order;
+        int is_default;
+};
+
+std::ostream &operator<<(std::ostream &o, const pokemon_data &p);
+
+std::istream &operator>>(std::istream &i, pokemon_data &p);
+
+struct move_data {
+        int id;
+        std::string identifier;
+        int generation_id;
+        int type_id;
+        int power;
+        int pp;
+        int accuracy;
+        int priority;
+        int target_id;
+        int damage_class_id;
+        int effect_id;
+        int effect_chance;
+        int contest_type_id;
+        int contest_effect_id;
+        int super_contest_effect_id;
+};
+
+std::ostream &operator<<(std::ostream &o, const move_data &m);
+
+std::istream &operator>>(std::istream &o, move_data &m);
+
+struct pokemon_move_data {
+        int pokemon_id;
+        int version_group_id;
+        int move_id;
+        int pokemon_move_method_id;
+        int level;
+        int order;
+};
+
+std::ostream &operator<<(std::ostream &o, const pokemon_move_data &m);
+
+std::istream &operator>>(std::istream &o, pokemon_move_data &m);
+
+struct pokemon_species_data {
+        int id;
+        std::string identifier;
+        int generation_id;
+        int evolves_from_species_id;
+        int evolution_chain_id;
+        int color_id;
+        int shape_id;
+        int habitat_id;
+        int gender_rate;
+        int capture_rate;
+        int base_happiness;
+        int is_baby;
+        int hatch_counter;
+        int has_gender_differences;
+        int growth_rate_id;
+        int forms_switchable;
+        int is_legendary;
+        int is_mythical;
+        int order;
+        int conquest_order;
+};
+
+std::ostream &operator<<(std::ostream &o, const pokemon_species_data &m);
+
+std::istream &operator>>(std::istream &o, pokemon_species_data &m);
+
+struct experience_data {
+        int growth_rate_id;
+        int level;
+        int experience;
+};
+
+std::ostream &operator<<(std::ostream &o, const experience_data &m);
+
+std::istream &operator>>(std::istream &o, experience_data &m);
+
+struct type_names_data {
+        int type_id;
+        int local_language_id;
+        std::string name;
+};
+
+std::ostream &operator<<(std::ostream &o, const type_names_data &m);
+
+std::istream &operator>>(std::istream &o, type_names_data &m);

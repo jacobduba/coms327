@@ -1824,6 +1824,40 @@ int main(int argc, char *argv[]) {
                 for (vi = move_list.begin(); vi != move_list.end(); vi++) {
                         std::cout << *vi << std::endl;
                 }
+        } else if (input == "pokemon_moves") {
+                std::vector<pokemon_move_data> pokemon_move_list;
+                load_file<pokemon_move_data>(pokemon_move_list,
+                                             "pokemon_moves.csv");
+
+                std::vector<pokemon_move_data>::iterator vi;
+                for (vi = pokemon_move_list.begin();
+                     vi != pokemon_move_list.end(); vi++) {
+                        std::cout << *vi << std::endl;
+                }
+        } else if (input == "pokemon_species") {
+                std::vector<pokemon_species_data> p;
+                load_file<pokemon_species_data>(p, "pokemon_species.csv");
+
+                std::vector<pokemon_species_data>::iterator vi;
+                for (vi = p.begin(); vi != p.end(); vi++) {
+                        std::cout << *vi << std::endl;
+                }
+        } else if (input == "experience") {
+                std::vector<experience_data> p;
+                load_file<experience_data>(p, "experience.csv");
+
+                std::vector<experience_data>::iterator vi;
+                for (vi = p.begin(); vi != p.end(); vi++) {
+                        std::cout << *vi << std::endl;
+                }
+        } else if (input == "type_names") {
+                std::vector<type_names_data> p;
+                load_file<type_names_data>(p, "type_names.csv");
+
+                std::vector<type_names_data>::iterator vi;
+                for (vi = p.begin(); vi != p.end(); vi++) {
+                        std::cout << *vi << std::endl;
+                }
         }
 
         return 0;
