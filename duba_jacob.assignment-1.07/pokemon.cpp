@@ -41,7 +41,7 @@ int stoi_emax(std::string s) {
 
 std::string itos(int s) {
         if (s == INT_MAX) {
-                return "";
+                return "Empty";
         }
 
         return std::to_string(s);
