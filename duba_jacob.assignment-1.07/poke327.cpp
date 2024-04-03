@@ -1858,6 +1858,30 @@ int main(int argc, char *argv[]) {
                 for (vi = p.begin(); vi != p.end(); vi++) {
                         std::cout << *vi << std::endl;
                 }
+        } else if (input == "pokemon_stats") {
+                std::vector<pokemon_stats_data> p;
+                load_file<pokemon_stats_data>(p, "pokemon_stats.csv");
+
+                std::vector<pokemon_stats_data>::iterator vi;
+                for (vi = p.begin(); vi != p.end(); vi++) {
+                        std::cout << *vi << std::endl;
+                }
+        } else if (input == "stats") {
+                std::vector<stats_data> p;
+                load_file<stats_data>(p, "stats.csv");
+
+                std::vector<stats_data>::iterator vi;
+                for (vi = p.begin(); vi != p.end(); vi++) {
+                        std::cout << *vi << std::endl;
+                }
+        } else if (input == "pokemon_types") {
+                std::vector<pokemon_types_data> p;
+                load_file<pokemon_types_data>(p, "pokemon_types.csv");
+
+                std::vector<pokemon_types_data>::iterator vi;
+                for (vi = p.begin(); vi != p.end(); vi++) {
+                        std::cout << *vi << std::endl;
+                }
         }
 
         return 0;

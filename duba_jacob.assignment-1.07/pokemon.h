@@ -125,3 +125,36 @@ struct type_names_data {
 std::ostream &operator<<(std::ostream &o, const type_names_data &m);
 
 std::istream &operator>>(std::istream &o, type_names_data &m);
+
+struct pokemon_stats_data {
+        int pokemon_id;
+        int stat_id;
+        int base_stat;
+        int effort;
+};
+
+std::ostream &operator<<(std::ostream &o, const pokemon_stats_data &m);
+
+std::istream &operator>>(std::istream &o, pokemon_stats_data &m);
+
+struct stats_data {
+        int id;
+        int damage_class_id;
+        std::string identifier;
+        int is_battle_only;
+        int game_index;
+};
+
+std::ostream &operator<<(std::ostream &o, const stats_data &m);
+
+std::istream &operator>>(std::istream &o, stats_data &m);
+
+struct pokemon_types_data {
+        int pokemon_id;
+        int type_id;
+        int slot;
+};
+
+std::ostream &operator<<(std::ostream &o, const pokemon_types_data &m);
+
+std::istream &operator>>(std::istream &o, pokemon_types_data &m);
