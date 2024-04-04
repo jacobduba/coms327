@@ -13,7 +13,7 @@ template <class T> int load_file(std::vector<T> &list, std::string file_name) {
                 return 1;
         }
 
-        std::ifstream file(loc.c_str());
+        std::ifstream file(loc);
 
         std::string firstline;
         getline(file, firstline);

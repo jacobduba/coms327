@@ -11,21 +11,35 @@ template <class T> class darray {
         int back;
 
         void resize() {
-                T *tmp;
+                T *t = new T[size * 2];
                 int i;
 
-                tmp = new T(size * 2);
-
                 for (i = 0; i < size; i++) {
-                        tmp[i] = a[i];
+                        t[i] = a[i];
                 }
 
-                size *= i;
                 delete[] a;
-                a = tmp;
+                a = t;
+                size *= 2;
         }
 
+        // core files are memory dumps of program that segfaulted
+        // use for debugging
+
       public:
+        class iterator {
+              private:
+                int i;
+                darray<T> &d;
+
+              public:
+                iterator() { i = 0; }
+                iterator(darray<T> &d) : d(d), i(0) {}
+                void next() { i++; }
+                T operator*() const { return d[i]; }
+                bool is_valid() const { return i < d.back(); }
+        };
+
         darray() : a(new T[DEFAULT_SIZE]), size(DEFAULT_SIZE), back(0) {}
         darray(int s) : a(new T[s]), size(s), back(0) {}
         ~darray() {
@@ -38,7 +52,12 @@ template <class T> class darray {
                 }
         }
 
-        T &operator[](int i) { return a[i]; }
+        T &operator[](int i) const {
+                if (i >= back) {
+                        throw "darray inex out of bounds";
+                }
+                return a[i];
+        }
 
         T &remove(int i) {
                 while (i < size - 1) {
@@ -56,7 +75,12 @@ template <class T> class darray {
                         cout << " " << a[i] << endl;
                 }
                 cout << "]" << endl;
+                return cout;
         }
 };
+
+template <class T> ostream &operator<<(ostream &o, const darray<T> &d) {
+        return d.print(o);
+}
 
 #endif
