@@ -963,16 +963,18 @@ int spawn_trainers(chunk_t *chunk, int num_trainers) {
 
         int entity_type;
         for (int i = 2; i < num_trainers; i++) {
-                entity_type = rand() % NUM_TRAINER_TYPES;
+                entity_type = rand() % NUM_TRAINER_TYPES + 2;
                 switch (entity_type) {
-                case 0:
-                        spawn_entity_randomly(chunk, HIKER, get_land_cost_hiker,
-                                              entity_count++);
-                        break;
-                case 1:
-                        spawn_entity_randomly(chunk, RIVAL, get_land_cost_rival,
-                                              entity_count++);
-                        break;
+                // case 0:
+                //         spawn_entity_randomly(chunk, HIKER,
+                //         get_land_cost_hiker,
+                //                               entity_count++);
+                //         break;
+                // case 1:
+                //         spawn_entity_randomly(chunk, RIVAL,
+                //         get_land_cost_rival,
+                //                               entity_count++);
+                //         break;
                 case 2:
                         spawn_entity_randomly(chunk, PACER, get_land_cost_other,
                                               entity_count++);
@@ -1803,88 +1805,88 @@ int do_tick(chunk_t *world[WORLD_SIZE][WORLD_SIZE], cord_t *cur_chunk_cord,
 }
 
 int main(int argc, char *argv[]) {
-        std::string input;
+        // std::string input;
 
-        std::cout << "Enter file you want to parse: ";
-        std::cin >> input;
+        // std::cout << "Enter file you want to parse: ";
+        // std::cin >> input;
 
-        if (input == "pokemon") {
-                std::vector<pokemon_data> poke_list;
-                load_file<pokemon_data>(poke_list, "pokemon.csv");
+        // if (input == "pokemon") {
+        //         std::vector<pokemon_data> poke_list;
+        //         load_file<pokemon_data>(poke_list, "pokemon.csv");
 
-                std::vector<pokemon_data>::iterator vi;
-                for (vi = poke_list.begin(); vi != poke_list.end(); vi++) {
-                        std::cout << *vi << std::endl;
-                }
-        } else if (input == "moves") {
-                std::vector<move_data> move_list;
-                load_file<move_data>(move_list, "moves.csv");
+        //         std::vector<pokemon_data>::iterator vi;
+        //         for (vi = poke_list.begin(); vi != poke_list.end(); vi++) {
+        //                 std::cout << *vi << std::endl;
+        //         }
+        // } else if (input == "moves") {
+        //         std::vector<move_data> move_list;
+        //         load_file<move_data>(move_list, "moves.csv");
 
-                std::vector<move_data>::iterator vi;
-                for (vi = move_list.begin(); vi != move_list.end(); vi++) {
-                        std::cout << *vi << std::endl;
-                }
-        } else if (input == "pokemon_moves") {
-                std::vector<pokemon_move_data> pokemon_move_list;
-                load_file<pokemon_move_data>(pokemon_move_list,
-                                             "pokemon_moves.csv");
+        //         std::vector<move_data>::iterator vi;
+        //         for (vi = move_list.begin(); vi != move_list.end(); vi++) {
+        //                 std::cout << *vi << std::endl;
+        //         }
+        // } else if (input == "pokemon_moves") {
+        //         std::vector<pokemon_move_data> pokemon_move_list;
+        //         load_file<pokemon_move_data>(pokemon_move_list,
+        //                                      "pokemon_moves.csv");
 
-                std::vector<pokemon_move_data>::iterator vi;
-                for (vi = pokemon_move_list.begin();
-                     vi != pokemon_move_list.end(); vi++) {
-                        std::cout << *vi << std::endl;
-                }
-        } else if (input == "pokemon_species") {
-                std::vector<pokemon_species_data> p;
-                load_file<pokemon_species_data>(p, "pokemon_species.csv");
+        //         std::vector<pokemon_move_data>::iterator vi;
+        //         for (vi = pokemon_move_list.begin();
+        //              vi != pokemon_move_list.end(); vi++) {
+        //                 std::cout << *vi << std::endl;
+        //         }
+        // } else if (input == "pokemon_species") {
+        //         std::vector<pokemon_species_data> p;
+        //         load_file<pokemon_species_data>(p, "pokemon_species.csv");
 
-                std::vector<pokemon_species_data>::iterator vi;
-                for (vi = p.begin(); vi != p.end(); vi++) {
-                        std::cout << *vi << std::endl;
-                }
-        } else if (input == "experience") {
-                std::vector<experience_data> p;
-                load_file<experience_data>(p, "experience.csv");
+        //         std::vector<pokemon_species_data>::iterator vi;
+        //         for (vi = p.begin(); vi != p.end(); vi++) {
+        //                 std::cout << *vi << std::endl;
+        //         }
+        // } else if (input == "experience") {
+        //         std::vector<experience_data> p;
+        //         load_file<experience_data>(p, "experience.csv");
 
-                std::vector<experience_data>::iterator vi;
-                for (vi = p.begin(); vi != p.end(); vi++) {
-                        std::cout << *vi << std::endl;
-                }
-        } else if (input == "type_names") {
-                std::vector<type_names_data> p;
-                load_file<type_names_data>(p, "type_names.csv");
+        //         std::vector<experience_data>::iterator vi;
+        //         for (vi = p.begin(); vi != p.end(); vi++) {
+        //                 std::cout << *vi << std::endl;
+        //         }
+        // } else if (input == "type_names") {
+        //         std::vector<type_names_data> p;
+        //         load_file<type_names_data>(p, "type_names.csv");
 
-                std::vector<type_names_data>::iterator vi;
-                for (vi = p.begin(); vi != p.end(); vi++) {
-                        std::cout << *vi << std::endl;
-                }
-        } else if (input == "pokemon_stats") {
-                std::vector<pokemon_stats_data> p;
-                load_file<pokemon_stats_data>(p, "pokemon_stats.csv");
+        //         std::vector<type_names_data>::iterator vi;
+        //         for (vi = p.begin(); vi != p.end(); vi++) {
+        //                 std::cout << *vi << std::endl;
+        //         }
+        // } else if (input == "pokemon_stats") {
+        //         std::vector<pokemon_stats_data> p;
+        //         load_file<pokemon_stats_data>(p, "pokemon_stats.csv");
 
-                std::vector<pokemon_stats_data>::iterator vi;
-                for (vi = p.begin(); vi != p.end(); vi++) {
-                        std::cout << *vi << std::endl;
-                }
-        } else if (input == "stats") {
-                std::vector<stats_data> p;
-                load_file<stats_data>(p, "stats.csv");
+        //         std::vector<pokemon_stats_data>::iterator vi;
+        //         for (vi = p.begin(); vi != p.end(); vi++) {
+        //                 std::cout << *vi << std::endl;
+        //         }
+        // } else if (input == "stats") {
+        //         std::vector<stats_data> p;
+        //         load_file<stats_data>(p, "stats.csv");
 
-                std::vector<stats_data>::iterator vi;
-                for (vi = p.begin(); vi != p.end(); vi++) {
-                        std::cout << *vi << std::endl;
-                }
-        } else if (input == "pokemon_types") {
-                std::vector<pokemon_types_data> p;
-                load_file<pokemon_types_data>(p, "pokemon_types.csv");
+        //         std::vector<stats_data>::iterator vi;
+        //         for (vi = p.begin(); vi != p.end(); vi++) {
+        //                 std::cout << *vi << std::endl;
+        //         }
+        // } else if (input == "pokemon_types") {
+        //         std::vector<pokemon_types_data> p;
+        //         load_file<pokemon_types_data>(p, "pokemon_types.csv");
 
-                std::vector<pokemon_types_data>::iterator vi;
-                for (vi = p.begin(); vi != p.end(); vi++) {
-                        std::cout << *vi << std::endl;
-                }
-        }
+        //         std::vector<pokemon_types_data>::iterator vi;
+        //         for (vi = p.begin(); vi != p.end(); vi++) {
+        //                 std::cout << *vi << std::endl;
+        //         }
+        // }
 
-        return 0;
+        // return 0;
 
         int seed;
 
