@@ -963,7 +963,7 @@ int spawn_trainers(chunk_t *chunk, int num_trainers) {
 
         int entity_type;
         for (int i = 2; i < num_trainers; i++) {
-                entity_type = rand() % NUM_TRAINER_TYPES + 2;
+                entity_type = rand() % (NUM_TRAINER_TYPES - 2) + 2;
                 switch (entity_type) {
                 // case 0:
                 //         spawn_entity_randomly(chunk, HIKER,
