@@ -1010,7 +1010,7 @@ int spawn_trainers(chunk_t *chunk, int num_trainers) {
  */
 int gen_chunk_if_not_exists(chunk_t *world[WORLD_SIZE][WORLD_SIZE],
                             cord_t cur_chunk, int num_trainers) {
-        chunk_t *chunk;
+        chunk_t *c = new chunk();
         int manhatten_dist;
         int n_gate_x, s_gate_x, w_gate_y, e_gate_y;
         int place_poke_center, place_pokemart;
@@ -1022,15 +1022,15 @@ int gen_chunk_if_not_exists(chunk_t *world[WORLD_SIZE][WORLD_SIZE],
                 return 1;
         }
 
-        chunk = (chunk_t *)malloc(sizeof(chunk_t));
+        // chunk = (chunk_t *)malloc(sizeof(chunk_t));
 
-        chunk->w_gate_y = get_gate_coordinates(
+        c->w_gate_y = get_gate_coordinates(
             world, (cord_t){cur_chunk.x - 1, cur_chunk.y}, EAST_GATE);
-        chunk->e_gate_y = get_gate_coordinates(
+        c->e_gate_y = get_gate_coordinates(
             world, (cord_t){cur_chunk.x + 1, cur_chunk.y}, WEST_GATE);
-        chunk->n_gate_x = get_gate_coordinates(
+        c->n_gate_x = get_gate_coordinates(
             world, (cord_t){cur_chunk.x, cur_chunk.y - 1}, SOUTH_GATE);
-        chunk->s_gate_x = get_gate_coordinates(
+        c->s_gate_x = get_gate_coordinates(
             world, (cord_t){cur_chunk.x, cur_chunk.y + 1}, NORTH_GATE);
 
         manhatten_dist = abs(cur_chunk.x - WORLD_SIZE / 2) +
@@ -1049,16 +1049,16 @@ int gen_chunk_if_not_exists(chunk_t *world[WORLD_SIZE][WORLD_SIZE],
                 place_pokemart = 1;
         }
 
-        generate_terrain(chunk, place_poke_center, place_pokemart);
+        generate_terrain(c, place_poke_center, place_pokemart);
 
-        chunk->event_queue = (sc_heap *)malloc(sizeof(struct sc_heap));
-        sc_heap_init(chunk->event_queue, num_entities);
+        c->event_queue = (sc_heap *)malloc(sizeof(struct sc_heap));
+        sc_heap_init(c->event_queue, num_entities);
 
-        spawn_trainers(chunk, num_trainers);
+        spawn_trainers(c, num_trainers);
 
-        chunk->tick = 0;
+        c->tick = 0;
 
-        world[cur_chunk.x][cur_chunk.y] = chunk;
+        world[cur_chunk.x][cur_chunk.y] = c;
 
         return 0;
 }
