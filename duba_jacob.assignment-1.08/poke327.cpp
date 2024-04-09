@@ -1481,15 +1481,13 @@ void display_fly_screen(int *turn_completed, char const **message,
         mvprintw(6, 19, "%-40s", "");
         mvprintw(7, 19, "%-40s", "");
 
-        x = -1, y = -1;
-
         echo();
         curs_set(1);
-        int success = mvscanw(6, 20, "%d %d", &x, &y);
+        int items_scanned = mvscanw(6, 20, "%d %d", &x, &y);
         noecho();
         curs_set(0);
 
-        if (x == -1 || y == -1) {
+        if (items_scanned != 2) {
                 *message = "Invalid input. Flying canceled.";
                 *turn_completed = 0;
                 return;
