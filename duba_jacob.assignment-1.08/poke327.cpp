@@ -1,11 +1,13 @@
 #include "csv.h"
 #include "sc_heap.h"
+#include <algorithm>
 #include <climits>
 #include <cstdlib>
 #include <ctime>
 #include <curses.h>
 #include <getopt.h>
 #include <iostream>
+#include <iterator>
 
 // Length and height for the world
 #define WORLD_SIZE 401
@@ -98,6 +100,39 @@ typedef class chunk {
         cord_t pc_pos;
         int tick;
 } chunk_t;
+
+struct pokemon {
+        int id;
+        std::string identifier;
+        int hp;
+        int hp_iv;
+        int attack;
+        int attack_iv;
+        int defense;
+        int defense_iv;
+        int special_attack;
+        int special_attack_iv;
+        int special_defense;
+        int special_defense_iv;
+        int speed;
+        int speed_iv;
+        int accuracy;
+        int accuracy_iv;
+        int evasion;
+        int evasion_iv;
+        std::vector<move_data> moves;
+        int level;
+};
+
+std::ostream &operator<<(std::ostream &o, const pokemon &p) {
+        return o << p.id << "," << p.identifier << "," << p.hp << "," << p.hp_iv
+                 << "," << p.attack << "," << p.attack_iv << "," << p.defense
+                 << "," << p.defense_iv << "," << p.special_attack << ","
+                 << p.special_attack_iv << "," << p.special_defense << ","
+                 << p.special_defense_iv << "," << p.speed << "," << p.speed_iv
+                 << "," << p.accuracy << "," << p.accuracy_iv << ","
+                 << p.evasion << "," << p.evasion_iv << "," << p.level;
+}
 
 enum colors { BLUE = 1, GREEN, WHITE, CYAN, YELLOW, MAGENTA, RED };
 
@@ -1803,18 +1838,37 @@ int do_tick(chunk_t *world[WORLD_SIZE][WORLD_SIZE], cord_t *cur_chunk_cord,
 }
 
 int main(int argc, char *argv[]) {
-        initscr();
-        cbreak(); // Do not buffer inputs
-        curs_set(0);
-        keypad(stdscr, TRUE);
-        start_color();
-        set_escdelay(0);
-        noecho();
-        init_color_pairs();
 
-        clear();
-        printw("Now loading...\n\n");
-        refresh();
+        int seed;
+
+        chunk_t *world[WORLD_SIZE][WORLD_SIZE];
+        cord_t cur_chunk_pos;
+
+        int hiker_dist[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT];
+        int rival_dist[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT];
+
+        int num_trainers = DEFAULT_NUMTRAINERS;
+
+        int opt;
+        int option_index = 0;
+
+        seed = time(NULL);
+        // seed = 1709193713;
+        printf("Using seed: %d\n", seed);
+        srand(seed);
+
+        // initscr();
+        // cbreak(); // Do not buffer inputs
+        // curs_set(0);
+        // keypad(stdscr, TRUE);
+        // start_color();
+        // set_escdelay(0);
+        // noecho();
+        // init_color_pairs();
+
+        // clear();
+        // printw("Now loading...\n\n");
+        // refresh();
 
         std::vector<pokemon_data> pokemon_list;
         load_file<pokemon_data>(pokemon_list, "pokemon.csv");
@@ -1835,19 +1889,6 @@ int main(int argc, char *argv[]) {
         load_file<stats_data>(stats_list, "stats.csv");
         std::vector<pokemon_types_data> pokemon_types_list;
         load_file<pokemon_types_data>(pokemon_types_list, "pokemon_types.csv");
-
-        int seed;
-
-        chunk_t *world[WORLD_SIZE][WORLD_SIZE];
-        cord_t cur_chunk_pos;
-
-        int hiker_dist[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT];
-        int rival_dist[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT];
-
-        int num_trainers = DEFAULT_NUMTRAINERS;
-
-        int opt;
-        int option_index = 0;
 
         struct option long_options[] = {
             {
@@ -1878,10 +1919,47 @@ int main(int argc, char *argv[]) {
                 }
         }
 
-        seed = time(NULL);
-        // seed = 1709193713;
-        printf("Using seed: %d\n", seed);
-        srand(seed);
+        // START
+        pokemon poke;
+
+        int level = 1;
+
+        poke.level = level;
+
+        pokemon_data pd = pokemon_list[rand() % pokemon_list.size()];
+        poke.id = pd.id;
+        poke.identifier = pd.identifier;
+
+        std::vector<pokemon_stats_data> stats_for_pokemon;
+        for (int i = 0; i < pokemon_stats_list.size(); i++) {
+                pokemon_stats_data psd = pokemon_stats_list[i];
+                if (psd.pokemon_id == poke.id) {
+                        stats_for_pokemon.push_back(psd);
+                }
+        }
+
+        poke.hp = stats_for_pokemon[0].base_stat;
+        poke.hp_iv = rand() % 16;
+        poke.attack = stats_for_pokemon[1].base_stat;
+        poke.attack_iv = rand() % 16;
+        poke.defense = stats_for_pokemon[2].base_stat;
+        poke.defense_iv = rand() % 16;
+        poke.special_attack = stats_for_pokemon[3].base_stat;
+        poke.special_attack_iv = rand() % 16;
+        poke.special_defense = stats_for_pokemon[4].base_stat;
+        poke.special_defense_iv = rand() % 16;
+        poke.speed = stats_for_pokemon[5].base_stat;
+        poke.speed_iv = rand() % 16;
+        poke.accuracy = stats_for_pokemon[6].base_stat;
+        poke.accuracy_iv = rand() % 16;
+        poke.evasion = stats_for_pokemon[7].base_stat;
+        poke.evasion_iv = rand() % 16;
+
+        std::cout << poke;
+
+        return 0;
+
+        // END
 
         for (int x = 0; x < WORLD_SIZE; x++) {
                 for (int y = 0; y < WORLD_SIZE; y++) {
