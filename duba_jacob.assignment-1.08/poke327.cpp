@@ -8,6 +8,8 @@
 #include <getopt.h>
 #include <iostream>
 #include <iterator>
+#include <set>
+#include <unordered_map>
 
 // Length and height for the world
 #define WORLD_SIZE 401
@@ -101,6 +103,8 @@ typedef class chunk {
         int tick;
 } chunk_t;
 
+enum gender { MALE = 0, FEMALE = 1 };
+
 struct pokemon {
         int id;
         std::string identifier;
@@ -122,16 +126,18 @@ struct pokemon {
         int evasion_iv;
         std::vector<move_data> moves;
         int level;
+        gender poke_gender;
 };
 
 std::ostream &operator<<(std::ostream &o, const pokemon &p) {
-        return o << p.id << "," << p.identifier << "," << p.hp << "," << p.hp_iv
-                 << "," << p.attack << "," << p.attack_iv << "," << p.defense
-                 << "," << p.defense_iv << "," << p.special_attack << ","
-                 << p.special_attack_iv << "," << p.special_defense << ","
-                 << p.special_defense_iv << "," << p.speed << "," << p.speed_iv
-                 << "," << p.accuracy << "," << p.accuracy_iv << ","
-                 << p.evasion << "," << p.evasion_iv << "," << p.level;
+        o << p.id << "," << p.identifier << "," << p.hp << "," << p.hp_iv << ","
+          << p.attack << "," << p.attack_iv << "," << p.defense << ","
+          << p.defense_iv << "," << p.special_attack << ","
+          << p.special_attack_iv << "," << p.special_defense << ","
+          << p.special_defense_iv << "," << p.speed << "," << p.speed_iv << ","
+          << p.accuracy << "," << p.accuracy_iv << "," << p.evasion << ","
+          << p.evasion_iv << "," << p.level;
+        return o;
 }
 
 enum colors { BLUE = 1, GREEN, WHITE, CYAN, YELLOW, MAGENTA, RED };
@@ -1837,6 +1843,22 @@ int do_tick(chunk_t *world[WORLD_SIZE][WORLD_SIZE], cord_t *cur_chunk_cord,
         return 0;
 }
 
+void find_valid_moves(std::vector<pokemon_move_data> &moves_for_pokemon,
+                      std::vector<pokemon_move_data> &pokemon_move_list,
+                      pokemon &poke) {
+        std::set<int> used_moves;
+        for (int i = 0; i < pokemon_move_list.size(); i++) {
+                pokemon_move_data pmd = pokemon_move_list[i];
+                if (pmd.pokemon_id == poke.id &&
+                    pmd.pokemon_move_method_id == 1 &&
+                    pmd.level <= poke.level &&
+                    used_moves.count(pmd.move_id) == 0) {
+                        moves_for_pokemon.push_back(pmd);
+                        used_moves.insert(pmd.move_id);
+                }
+        }
+}
+
 int main(int argc, char *argv[]) {
 
         int seed;
@@ -1954,8 +1976,40 @@ int main(int argc, char *argv[]) {
         poke.accuracy_iv = rand() % 16;
         poke.evasion = stats_for_pokemon[7].base_stat;
         poke.evasion_iv = rand() % 16;
+        poke.poke_gender = static_cast<gender>(rand() % 2);
 
-        std::cout << poke;
+        std::vector<pokemon_move_data> moves_for_pokemon;
+
+        find_valid_moves(moves_for_pokemon, pokemon_move_list, poke);
+
+        const int STRUGGLE_MOVE_INDEX = 165 - 1;
+
+        if (moves_for_pokemon.size() == 0) {
+                poke.moves.push_back(move_list[STRUGGLE_MOVE_INDEX]);
+        } else if (moves_for_pokemon.size() == 0) {
+                int random_index_1 = rand() % moves_for_pokemon.size();
+                pokemon_move_data random_move =
+                    moves_for_pokemon[random_index_1];
+                poke.moves.push_back(move_list[random_move.move_id - 1]);
+        } else {
+                int random_index_1 = rand() % moves_for_pokemon.size();
+                pokemon_move_data random_move =
+                    moves_for_pokemon[random_index_1];
+                poke.moves.push_back(move_list[random_move.move_id - 1]);
+
+                int random_index_2;
+                while ((random_index_2 = rand() % moves_for_pokemon.size()) ==
+                       random_index_1)
+                        ;
+                random_move = moves_for_pokemon[random_index_2];
+                poke.moves.push_back(move_list[random_move.move_id - 1]);
+        }
+
+        for (int i = 0; i < poke.moves.size(); i++) {
+                std::cout << poke.moves[i] << std::endl;
+        }
+
+        std::cout << poke << std::endl;
 
         return 0;
 
