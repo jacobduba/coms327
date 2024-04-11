@@ -136,6 +136,7 @@ struct pokemon {
         std::vector<move_data> moves;
         int level;
         gender poke_gender;
+        int shiney;
 };
 
 std::ostream &operator<<(std::ostream &o, const pokemon &p) {
@@ -162,7 +163,7 @@ std::ostream &operator<<(std::ostream &o, const pokemon &p) {
                 o << p.moves[i];
         }
         o << "}, level: " << p.level << ", poke_gender: " << p.poke_gender
-          << "]";
+          << ", shiney: " << p.shiney << "]";
 
         return o;
 }
@@ -1898,6 +1899,7 @@ void initialize_rand_pokemon_at_level(
         poke.identifier = pd.identifier;
 
         poke.poke_gender = static_cast<gender>(rand() % 2);
+        poke.shiney = rand() % 2;
 
         std::vector<pokemon_stats_data> stats_for_pokemon;
         for (int i = 0; i < pokemon_stats_list.size(); i++) {
@@ -1966,7 +1968,7 @@ void initialize_rand_pokemon_at_level(
                 const int STRUGGLE_MOVE_INDEX = 165 - 1;
 
                 poke.moves.push_back(move_list[STRUGGLE_MOVE_INDEX]);
-        } else if (moves_for_pokemon.size() == 0) {
+        } else if (moves_for_pokemon.size() == 1) {
                 int random_index_1 = rand() % moves_for_pokemon.size();
                 pokemon_move_data random_move =
                     moves_for_pokemon[random_index_1];
@@ -1997,7 +1999,7 @@ int main(int argc, char *argv[]) {
         int option_index = 0;
 
         seed = time(NULL);
-        // seed = 1709193713;
+        // seed = 1712799725;
         printf("Using seed: %d\n", seed);
         srand(seed);
 
