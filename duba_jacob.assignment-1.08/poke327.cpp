@@ -78,33 +78,6 @@ typedef enum entity_type {
         // SWIMMER
 } entity_type_t;
 
-typedef class entity {
-      public:
-        entity_type_t entity_type;
-        entity_type_t movement_type;
-        int defeated;
-        void *data;
-} entity_t;
-
-#define NUM_TRAINER_TYPES 6
-
-typedef struct event {
-        // int seq_number;
-        cord_t pos;
-} event_t;
-
-typedef class chunk {
-      public:
-        land_t terrain[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT];
-        int n_gate_x, s_gate_x, e_gate_y,
-            w_gate_y; // TODO move out. Will never be used
-        entity_t entities[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT];
-        struct sc_heap *event_queue;
-        cord_t pc_pos;
-        int tick;
-        int dist;
-} chunk_t;
-
 enum gender { MALE = 0, FEMALE = 1 };
 
 struct pokemon {
@@ -140,34 +113,33 @@ struct pokemon {
         int shiney;
 };
 
-std::ostream &operator<<(std::ostream &o, const pokemon &p) {
-        o << "pokemon[id: " << p.id << ", identifier: " << p.identifier
-          << ", hp_base: " << p.hp_base << ", hp_iv: " << p.hp_iv
-          << ", hp: " << p.hp << ", attack_base: " << p.attack_base
-          << ", attack_iv: " << p.attack_iv << ", attack: " << p.attack
-          << ", defense_base: " << p.defense_base
-          << ", defense_iv: " << p.defense_iv << ", defense: " << p.defense
-          << ", special_attack_base: " << p.special_attack_base
-          << ", special_attack_iv: " << p.special_attack_iv
-          << ", special_attack: " << p.special_attack
-          << ", special_defense_base: " << p.special_defense_base
-          << ", special_defense_iv: " << p.special_defense_iv
-          << ", special_defense: " << p.special_defense
-          << ", speed_base: " << p.speed_base << ", speed_iv: " << p.speed_iv
-          << ", speed: " << p.speed << ", accuracy_base: " << p.accuracy_base
-          << ", accuracy_iv: " << p.accuracy_iv << ", accuracy: " << p.accuracy
-          << ", evasion_base: " << p.evasion_base
-          << ", evasion_iv: " << p.evasion_iv << ", evasion: " << p.evasion;
+typedef class entity {
+      public:
+        entity_type_t entity_type;
+        entity_type_t movement_type;
+        int defeated;
+        std::vector<pokemon> *pokes;
+        void *data;
+} entity_t;
 
-        o << ", moves: {";
-        for (int i = 0; i < p.moves.size(); i++) {
-                o << p.moves[i];
-        }
-        o << "}, level: " << p.level << ", poke_gender: " << p.poke_gender
-          << ", shiney: " << p.shiney << "]";
+#define NUM_TRAINER_TYPES 6
 
-        return o;
-}
+typedef struct event {
+        // int seq_number;
+        cord_t pos;
+} event_t;
+
+typedef class chunk {
+      public:
+        land_t terrain[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT];
+        int n_gate_x, s_gate_x, e_gate_y,
+            w_gate_y; // TODO move out. Will never be used
+        entity_t entities[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT];
+        struct sc_heap *event_queue;
+        cord_t pc_pos;
+        int tick;
+        int dist;
+} chunk_t;
 
 enum colors { BLUE = 1, GREEN, WHITE, CYAN, YELLOW, MAGENTA, RED };
 
@@ -962,6 +934,7 @@ void spawn_entity(chunk_t *chunk, entity_type_t entity_type, cord_t cord,
         entity.entity_type = entity_type;
         entity.movement_type = entity_type;
         entity.defeated = 0;
+        entity.pokes = new std::vector<pokemon>();
 
         if (entity_type == WANDERER || entity_type == PACER ||
             entity_type == EXPLORER) {
@@ -1005,8 +978,140 @@ int return_negative_one_if_not_road(land_t land) {
         return 0;
 }
 
-int spawn_trainers(chunk_t *chunk, int num_trainers) {
+void find_valid_moves(std::vector<pokemon_move_data> &moves_for_pokemon,
+                      std::vector<pokemon_move_data> &pokemon_move_list,
+                      pokemon &poke) {
+        std::set<int> used_moves;
+        for (int i = 0; i < pokemon_move_list.size(); i++) {
+                pokemon_move_data pmd = pokemon_move_list[i];
+                if (pmd.pokemon_id == poke.id &&
+                    pmd.pokemon_move_method_id == 1 &&
+                    pmd.level <= poke.level &&
+                    used_moves.count(pmd.move_id) == 0) {
+                        moves_for_pokemon.push_back(pmd);
+                        used_moves.insert(pmd.move_id);
+                }
+        }
+}
+void init_rand_pokemon_at_level(pokemon &poke, int level, csv_data &d) {
+        pokemon_data pd = d.pokemon_list[rand() % d.pokemon_list.size()];
+        poke.id = pd.id;
+        poke.identifier = pd.identifier;
+
+        poke.poke_gender = static_cast<gender>(rand() % 2);
+        poke.shiney = rand() % 8192 == 0;
+
+        std::vector<pokemon_stats_data> stats_for_pokemon;
+        for (int i = 0; i < d.pokemon_stats_list.size(); i++) {
+                pokemon_stats_data psd = d.pokemon_stats_list[i];
+                if (psd.pokemon_id == poke.id) {
+                        stats_for_pokemon.push_back(psd);
+                }
+        }
+
+        poke.hp_base = stats_for_pokemon[0].base_stat;
+        poke.hp_iv = rand() % 16;
+        poke.attack_base = stats_for_pokemon[1].base_stat;
+        poke.attack_iv = rand() % 16;
+        poke.defense_base = stats_for_pokemon[2].base_stat;
+        poke.defense_iv = rand() % 16;
+        poke.special_attack_base = stats_for_pokemon[3].base_stat;
+        poke.special_attack_iv = rand() % 16;
+        poke.special_defense_base = stats_for_pokemon[4].base_stat;
+        poke.special_defense_iv = rand() % 16;
+        poke.speed_base = stats_for_pokemon[5].base_stat;
+        poke.speed_iv = rand() % 16;
+        poke.accuracy_base = stats_for_pokemon[6].base_stat;
+        poke.accuracy_iv = rand() % 16;
+        poke.evasion_base = stats_for_pokemon[7].base_stat;
+        poke.evasion_iv = rand() % 16;
+
+        poke.level = level;
+        poke.hp = (int)((double)((poke.hp_base + poke.hp_iv) * 2 * poke.level) /
+                        100) +
+                  poke.level + 10;
+        poke.attack = (int)((double)((poke.attack_base + poke.attack_iv) * 2 *
+                                     poke.level) /
+                            100) +
+                      5;
+        poke.defense = (int)((double)((poke.defense_base + poke.defense_iv) *
+                                      2 * poke.level) /
+                             100) +
+                       5;
+        poke.special_attack =
+            (int)((double)((poke.special_attack_base + poke.special_attack_iv) *
+                           2 * poke.level) /
+                  100) +
+            5;
+        poke.special_defense = (int)((double)((poke.special_defense_base +
+                                               poke.special_defense_iv) *
+                                              2 * poke.level) /
+                                     100) +
+                               5;
+        poke.speed =
+            (int)((double)((poke.speed_base + poke.speed_iv) * 2 * poke.level) /
+                  100) +
+            5;
+        poke.accuracy = (int)((double)((poke.accuracy_base + poke.accuracy_iv) *
+                                       2 * poke.level) /
+                              100) +
+                        5;
+        poke.evasion = (int)((double)((poke.evasion_base + poke.evasion_iv) *
+                                      2 * poke.level) /
+                             100) +
+                       5;
+
+        std::vector<pokemon_move_data> moves_for_pokemon;
+        find_valid_moves(moves_for_pokemon, d.pokemon_move_list, poke);
+
+        if (moves_for_pokemon.size() == 0) {
+                const int STRUGGLE_MOVE_INDEX = 165 - 1;
+
+                poke.moves.push_back(d.move_list[STRUGGLE_MOVE_INDEX]);
+        } else if (moves_for_pokemon.size() == 1) {
+                int random_index_1 = rand() % moves_for_pokemon.size();
+                pokemon_move_data random_move =
+                    moves_for_pokemon[random_index_1];
+                poke.moves.push_back(d.move_list[random_move.move_id - 1]);
+        } else {
+                int random_index_1 = rand() % moves_for_pokemon.size();
+                pokemon_move_data random_move =
+                    moves_for_pokemon[random_index_1];
+                poke.moves.push_back(d.move_list[random_move.move_id - 1]);
+
+                int random_index_2;
+                while ((random_index_2 = rand() % moves_for_pokemon.size()) ==
+                       random_index_1)
+                        ;
+                random_move = moves_for_pokemon[random_index_2];
+                poke.moves.push_back(d.move_list[random_move.move_id - 1]);
+        }
+}
+
+int rand_level_given_dist(chunk_t *chunk) {
+        int min_level, max_level;
+        if (chunk->dist <= 200) {
+                min_level = 1;
+                max_level = chunk->dist / 2 + 1;
+        } else {
+                min_level = (chunk->dist - 200) / 2 + 1;
+                max_level = 100;
+        }
+        return rand() % max_level + min_level;
+}
+
+void add_random_pokemon_to_trainers(chunk_t *chunk, csv_data csv, cord_t cord) {
+        do {
+                pokemon poke;
+                init_rand_pokemon_at_level(poke, rand_level_given_dist(chunk),
+                                           csv);
+                chunk->entities[cord.x][cord.y].pokes->push_back(poke);
+        } while (rand() % 10 < 6);
+}
+
+int spawn_trainers(chunk_t *chunk, int num_trainers, csv_data &csv) {
         int entity_count = 0;
+        cord_t cord;
 
         for (int y = 0; y < CHUNK_Y_HEIGHT; y++) {
                 for (int x = 0; x < CHUNK_X_WIDTH; x++) {
@@ -1022,14 +1127,16 @@ int spawn_trainers(chunk_t *chunk, int num_trainers) {
         if (num_trainers < 1)
                 return 0;
 
-        spawn_entity_randomly(chunk, HIKER, get_land_cost_hiker,
-                              entity_count++);
+        cord = spawn_entity_randomly(chunk, HIKER, get_land_cost_hiker,
+                                     entity_count++);
+        add_random_pokemon_to_trainers(chunk, csv, cord);
 
         if (num_trainers < 2)
                 return 0;
 
-        spawn_entity_randomly(chunk, RIVAL, get_land_cost_rival,
-                              entity_count++);
+        cord = spawn_entity_randomly(chunk, RIVAL, get_land_cost_rival,
+                                     entity_count++);
+        add_random_pokemon_to_trainers(chunk, csv, cord);
 
         int entity_type;
         for (int i = 2; i < num_trainers; i++) {
@@ -1046,22 +1153,26 @@ int spawn_trainers(chunk_t *chunk, int num_trainers) {
                 //                               entity_count++);
                 //         break;
                 case 2:
-                        spawn_entity_randomly(chunk, PACER, get_land_cost_other,
-                                              entity_count++);
+                        cord = spawn_entity_randomly(
+                            chunk, PACER, get_land_cost_other, entity_count++);
+                        add_random_pokemon_to_trainers(chunk, csv, cord);
                         break;
                 case 3:
-                        spawn_entity_randomly(chunk, WANDERER,
-                                              get_land_cost_wanderer,
-                                              entity_count++);
+                        cord = spawn_entity_randomly(chunk, WANDERER,
+                                                     get_land_cost_wanderer,
+                                                     entity_count++);
+                        add_random_pokemon_to_trainers(chunk, csv, cord);
                         break;
                 case 4:
-                        spawn_entity_randomly(
+                        cord = spawn_entity_randomly(
                             chunk, SENTRY, get_land_cost_other, entity_count++);
+                        add_random_pokemon_to_trainers(chunk, csv, cord);
                         break;
                 case 5:
-                        spawn_entity_randomly(chunk, EXPLORER,
-                                              get_land_cost_other,
-                                              entity_count++);
+                        cord = spawn_entity_randomly(chunk, EXPLORER,
+                                                     get_land_cost_other,
+                                                     entity_count++);
+                        add_random_pokemon_to_trainers(chunk, csv, cord);
                         break;
                         // case 6:
                         //         spawn_entity(chunk, SWIMMER,
@@ -1079,7 +1190,7 @@ int spawn_trainers(chunk_t *chunk, int num_trainers) {
  * Does NOT place PC.
  */
 int gen_chunk_if_not_exists(chunk_t *world[WORLD_SIZE][WORLD_SIZE],
-                            cord_t cur_chunk, int num_trainers) {
+                            cord_t cur_chunk, int num_trainers, csv_data &csv) {
         chunk_t *c = new chunk();
         int manhatten_dist;
         int n_gate_x, s_gate_x, w_gate_y, e_gate_y;
@@ -1124,7 +1235,7 @@ int gen_chunk_if_not_exists(chunk_t *world[WORLD_SIZE][WORLD_SIZE],
         c->event_queue = (sc_heap *)malloc(sizeof(struct sc_heap));
         sc_heap_init(c->event_queue, num_entities);
 
-        spawn_trainers(c, num_trainers);
+        spawn_trainers(c, num_trainers, csv);
 
         c->tick = 0;
 
@@ -1240,127 +1351,46 @@ int render_game(chunk_t *cur_chunk, char const *status) {
         return 0;
 }
 
-void find_valid_moves(std::vector<pokemon_move_data> &moves_for_pokemon,
-                      std::vector<pokemon_move_data> &pokemon_move_list,
-                      pokemon &poke) {
-        std::set<int> used_moves;
-        for (int i = 0; i < pokemon_move_list.size(); i++) {
-                pokemon_move_data pmd = pokemon_move_list[i];
-                if (pmd.pokemon_id == poke.id &&
-                    pmd.pokemon_move_method_id == 1 &&
-                    pmd.level <= poke.level &&
-                    used_moves.count(pmd.move_id) == 0) {
-                        moves_for_pokemon.push_back(pmd);
-                        used_moves.insert(pmd.move_id);
-                }
-        }
-}
-
-void init_rand_pokemon_at_level(pokemon &poke, int level, csv_data &d) {
-        pokemon_data pd = d.pokemon_list[rand() % d.pokemon_list.size()];
-        poke.id = pd.id;
-        poke.identifier = pd.identifier;
-
-        poke.poke_gender = static_cast<gender>(rand() % 2);
-        poke.shiney = rand() % 8192 == 0;
-
-        std::vector<pokemon_stats_data> stats_for_pokemon;
-        for (int i = 0; i < d.pokemon_stats_list.size(); i++) {
-                pokemon_stats_data psd = d.pokemon_stats_list[i];
-                if (psd.pokemon_id == poke.id) {
-                        stats_for_pokemon.push_back(psd);
-                }
-        }
-
-        poke.hp_base = stats_for_pokemon[0].base_stat;
-        poke.hp_iv = rand() % 16;
-        poke.attack_base = stats_for_pokemon[1].base_stat;
-        poke.attack_iv = rand() % 16;
-        poke.defense_base = stats_for_pokemon[2].base_stat;
-        poke.defense_iv = rand() % 16;
-        poke.special_attack_base = stats_for_pokemon[3].base_stat;
-        poke.special_attack_iv = rand() % 16;
-        poke.special_defense_base = stats_for_pokemon[4].base_stat;
-        poke.special_defense_iv = rand() % 16;
-        poke.speed_base = stats_for_pokemon[5].base_stat;
-        poke.speed_iv = rand() % 16;
-        poke.accuracy_base = stats_for_pokemon[6].base_stat;
-        poke.accuracy_iv = rand() % 16;
-        poke.evasion_base = stats_for_pokemon[7].base_stat;
-        poke.evasion_iv = rand() % 16;
-
-        poke.level = level;
-        poke.hp = (int)((double)((poke.hp_base + poke.hp_iv) * 2 * poke.level) /
-                        100) +
-                  poke.level + 10;
-        poke.attack = (int)((double)((poke.attack_base + poke.attack_iv) * 2 *
-                                     poke.level) /
-                            100) +
-                      5;
-        poke.defense = (int)((double)((poke.defense_base + poke.defense_iv) *
-                                      2 * poke.level) /
-                             100) +
-                       5;
-        poke.special_attack =
-            (int)((double)((poke.special_attack_base + poke.special_attack_iv) *
-                           2 * poke.level) /
-                  100) +
-            5;
-        poke.special_defense = (int)((double)((poke.special_defense_base +
-                                               poke.special_defense_iv) *
-                                              2 * poke.level) /
-                                     100) +
-                               5;
-        poke.speed =
-            (int)((double)((poke.speed_base + poke.speed_iv) * 2 * poke.level) /
-                  100) +
-            5;
-        poke.accuracy = (int)((double)((poke.accuracy_base + poke.accuracy_iv) *
-                                       2 * poke.level) /
-                              100) +
-                        5;
-        poke.evasion = (int)((double)((poke.evasion_base + poke.evasion_iv) *
-                                      2 * poke.level) /
-                             100) +
-                       5;
-
-        std::vector<pokemon_move_data> moves_for_pokemon;
-        find_valid_moves(moves_for_pokemon, d.pokemon_move_list, poke);
-
-        if (moves_for_pokemon.size() == 0) {
-                const int STRUGGLE_MOVE_INDEX = 165 - 1;
-
-                poke.moves.push_back(d.move_list[STRUGGLE_MOVE_INDEX]);
-        } else if (moves_for_pokemon.size() == 1) {
-                int random_index_1 = rand() % moves_for_pokemon.size();
-                pokemon_move_data random_move =
-                    moves_for_pokemon[random_index_1];
-                poke.moves.push_back(d.move_list[random_move.move_id - 1]);
-        } else {
-                int random_index_1 = rand() % moves_for_pokemon.size();
-                pokemon_move_data random_move =
-                    moves_for_pokemon[random_index_1];
-                poke.moves.push_back(d.move_list[random_move.move_id - 1]);
-
-                int random_index_2;
-                while ((random_index_2 = rand() % moves_for_pokemon.size()) ==
-                       random_index_1)
-                        ;
-                random_move = moves_for_pokemon[random_index_2];
-                poke.moves.push_back(d.move_list[random_move.move_id - 1]);
-        }
-}
-
 int start_pokemon_battle(chunk_t *cur_chunk, cord_t trainer_cord) {
 
-        render_game(cur_chunk, "Placeholder Pokemon Battle");
-        int command = 0;
-        while (command != KEY_ESC) {
-                command = getch();
-        }
-        // entity_t *trainer = &cur_chunk->entities[next_cord->x][next_cord->y];
         entity_t *trainer =
             &cur_chunk->entities[trainer_cord.x][trainer_cord.y];
+
+        for (int i = 0; i < trainer->pokes->size(); i++) {
+                pokemon poke = trainer->pokes->at(i);
+
+                erase();
+                printw("Trainer sent out %s! (%d/%zu)\n",
+                       poke.identifier.c_str(), i + 1, trainer->pokes->size());
+                printw("Level: %d\n", poke.level);
+                printw("HP: %d\n", poke.hp);
+                printw("Attack: %d\n", poke.attack);
+                printw("Defense: %d\n", poke.defense);
+                printw("Special Attack: %d\n", poke.special_attack);
+                printw("Special Defense: %d\n", poke.special_defense);
+                printw("Speed: %d\n", poke.speed);
+                printw("Accuracy: %d\n", poke.accuracy);
+                printw("Evasion: %d\n", poke.evasion);
+                printw("Moves:\n");
+                for (int i = 0; i < poke.moves.size(); i++) {
+                        printw("- %s\n", poke.moves[i].identifier.c_str());
+                }
+                if (poke.poke_gender == gender::MALE) {
+                        printw("Gender: Male\n");
+                } else {
+                        printw("Gender: Female\n");
+                }
+                if (poke.shiney) {
+                        printw("Pokemon is shiney!!!\n");
+                } else {
+                        printw("Pokemon is not shiney.\n");
+                }
+
+                refresh();
+
+                getch();
+        }
+        // entity_t *trainer = &cur_chunk->entities[next_cord->x][next_cord->y];
 
         if (trainer->entity_type == RIVAL || trainer->entity_type == HIKER) {
                 trainer->movement_type = EXPLORER;
@@ -1587,17 +1617,9 @@ int handle_pc_movements(cord_t *next_cord, cord_t entity_pos,
         if (next_land == TALL_GRASS) {
                 int pokemon_encounter = rand() % 10;
                 if (pokemon_encounter == 0) {
-                        int min_level, max_level;
-                        if (cur_chunk->dist <= 200) {
-                                min_level = 1;
-                                max_level = cur_chunk->dist / 2 + 1;
-                        } else {
-                                min_level = (cur_chunk->dist - 200) / 2 + 1;
-                                max_level = 100;
-                        }
-                        int poke_level = rand() % max_level + min_level;
                         pokemon poke;
-                        init_rand_pokemon_at_level(poke, poke_level, csv);
+                        init_rand_pokemon_at_level(
+                            poke, rand_level_given_dist(cur_chunk), csv);
 
                         erase();
                         printw("A wild %s appears!\n", poke.identifier.c_str());
@@ -1937,7 +1959,7 @@ int do_tick(chunk_t *world[WORLD_SIZE][WORLD_SIZE], cord_t *cur_chunk_cord,
         entity_t temp = *entity;
 
         cur_chunk->entities[entity_pos.x][entity_pos.y] =
-            (entity_t){NO_ENTITY, NO_ENTITY, 0, NULL};
+            (entity_t){NO_ENTITY, NO_ENTITY, 0, NULL, NULL};
 
         // Note: only entity that can enter gates is pc.
         // Thus is entity is in gate, switch chunk
@@ -1945,7 +1967,7 @@ int do_tick(chunk_t *world[WORLD_SIZE][WORLD_SIZE], cord_t *cur_chunk_cord,
                 if (next_cord.x == 0) {
                         cur_chunk_cord->x -= 1;
                         gen_chunk_if_not_exists(world, *cur_chunk_cord,
-                                                num_trainers);
+                                                num_trainers, csv);
 
                         cord_t cord_on_new_chunk;
                         cord_on_new_chunk.x = CHUNK_X_WIDTH - 2;
@@ -1962,7 +1984,7 @@ int do_tick(chunk_t *world[WORLD_SIZE][WORLD_SIZE], cord_t *cur_chunk_cord,
                 } else if (next_cord.x == CHUNK_X_WIDTH - 1) {
                         cur_chunk_cord->x += 1;
                         gen_chunk_if_not_exists(world, *cur_chunk_cord,
-                                                num_trainers);
+                                                num_trainers, csv);
 
                         cord_t cord_on_new_chunk;
                         cord_on_new_chunk.x = 1;
@@ -1979,7 +2001,7 @@ int do_tick(chunk_t *world[WORLD_SIZE][WORLD_SIZE], cord_t *cur_chunk_cord,
                 } else if (next_cord.y == 0) {
                         cur_chunk_cord->y -= 1;
                         gen_chunk_if_not_exists(world, *cur_chunk_cord,
-                                                num_trainers);
+                                                num_trainers, csv);
 
                         cord_t cord_on_new_chunk;
                         cord_on_new_chunk.x = entity_pos.x;
@@ -1996,7 +2018,7 @@ int do_tick(chunk_t *world[WORLD_SIZE][WORLD_SIZE], cord_t *cur_chunk_cord,
                 } else if (next_cord.y == CHUNK_Y_HEIGHT - 1) {
                         cur_chunk_cord->y += 1;
                         gen_chunk_if_not_exists(world, *cur_chunk_cord,
-                                                num_trainers);
+                                                num_trainers, csv);
 
                         cord_t cord_on_new_chunk;
                         cord_on_new_chunk.x = entity_pos.x;
@@ -2012,7 +2034,8 @@ int do_tick(chunk_t *world[WORLD_SIZE][WORLD_SIZE], cord_t *cur_chunk_cord,
                             cord_on_new_chunk;
                 }
         } else if (fly_f) {
-                gen_chunk_if_not_exists(world, *cur_chunk_cord, num_trainers);
+                gen_chunk_if_not_exists(world, *cur_chunk_cord, num_trainers,
+                                        csv);
 
                 cord_t pc_pos = spawn_entity_randomly(
                     world[cur_chunk_cord->x][cur_chunk_cord->y], PC,
@@ -2022,7 +2045,7 @@ int do_tick(chunk_t *world[WORLD_SIZE][WORLD_SIZE], cord_t *cur_chunk_cord,
         } else {
                 cur_chunk->entities[next_cord.x][next_cord.y] =
                     (entity_t){temp.entity_type, temp.movement_type,
-                               temp.defeated, temp.data};
+                               temp.defeated, temp.pokes, temp.data};
 
                 event_t *new_event = (event_t *)malloc(sizeof(event_t));
                 new_event->pos = next_cord;
@@ -2101,7 +2124,7 @@ int main(int argc, char *argv[]) {
 
         cur_chunk_pos.x = 200;
         cur_chunk_pos.y = 200;
-        gen_chunk_if_not_exists(world, cur_chunk_pos, num_trainers);
+        gen_chunk_if_not_exists(world, cur_chunk_pos, num_trainers, data);
 
         // Put the pc at the first tick by subtraccting the tick and
         // spawning pc at the new tick
