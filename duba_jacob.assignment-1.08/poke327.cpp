@@ -2,6 +2,7 @@
 #include "sc_heap.h"
 #include <algorithm>
 #include <climits>
+#include <cmath>
 #include <cstdlib>
 #include <ctime>
 #include <curses.h>
@@ -108,35 +109,61 @@ enum gender { MALE = 0, FEMALE = 1 };
 struct pokemon {
         int id;
         std::string identifier;
-        int hp;
+        int hp_base;
         int hp_iv;
-        int attack;
+        int hp;
+        int attack_base;
         int attack_iv;
-        int defense;
+        int attack;
+        int defense_base;
         int defense_iv;
-        int special_attack;
+        int defense;
+        int special_attack_base;
         int special_attack_iv;
-        int special_defense;
+        int special_attack;
+        int special_defense_base;
         int special_defense_iv;
-        int speed;
+        int special_defense;
+        int speed_base;
         int speed_iv;
-        int accuracy;
+        int speed;
+        int accuracy_base;
         int accuracy_iv;
-        int evasion;
+        int accuracy;
+        int evasion_base;
         int evasion_iv;
+        int evasion;
         std::vector<move_data> moves;
         int level;
         gender poke_gender;
 };
 
 std::ostream &operator<<(std::ostream &o, const pokemon &p) {
-        o << p.id << "," << p.identifier << "," << p.hp << "," << p.hp_iv << ","
-          << p.attack << "," << p.attack_iv << "," << p.defense << ","
-          << p.defense_iv << "," << p.special_attack << ","
-          << p.special_attack_iv << "," << p.special_defense << ","
-          << p.special_defense_iv << "," << p.speed << "," << p.speed_iv << ","
-          << p.accuracy << "," << p.accuracy_iv << "," << p.evasion << ","
-          << p.evasion_iv << "," << p.level;
+        o << "pokemon[id: " << p.id << ", identifier: " << p.identifier
+          << ", hp_base: " << p.hp_base << ", hp_iv: " << p.hp_iv
+          << ", hp: " << p.hp << ", attack_base: " << p.attack_base
+          << ", attack_iv: " << p.attack_iv << ", attack: " << p.attack
+          << ", defense_base: " << p.defense_base
+          << ", defense_iv: " << p.defense_iv << ", defense: " << p.defense
+          << ", special_attack_base: " << p.special_attack_base
+          << ", special_attack_iv: " << p.special_attack_iv
+          << ", special_attack: " << p.special_attack
+          << ", special_defense_base: " << p.special_defense_base
+          << ", special_defense_iv: " << p.special_defense_iv
+          << ", special_defense: " << p.special_defense
+          << ", speed_base: " << p.speed_base << ", speed_iv: " << p.speed_iv
+          << ", speed: " << p.speed << ", accuracy_base: " << p.accuracy_base
+          << ", accuracy_iv: " << p.accuracy_iv << ", accuracy: " << p.accuracy
+          << ", evasion_base: " << p.evasion_base
+          << ", evasion_iv: " << p.evasion_iv << ", evasion: " << p.evasion;
+
+        o << ", moves: {";
+        for (int i = 0; i < p.moves.size(); i++) {
+                o << p.moves[i];
+        }
+        o << "}, level: " << p.level << ", poke_gender: " << p.poke_gender
+          << "]";
+
         return o;
 }
 
@@ -1859,18 +1886,113 @@ void find_valid_moves(std::vector<pokemon_move_data> &moves_for_pokemon,
         }
 }
 
+void level_up_pokemon(pokemon &p) {}
+
+void initialize_rand_pokemon_at_level(
+    pokemon &poke, int level, std::vector<pokemon_data> &pokemon_list,
+    std::vector<pokemon_stats_data> &pokemon_stats_list,
+    std::vector<pokemon_move_data> &pokemon_move_list,
+    std::vector<move_data> &move_list) {
+        pokemon_data pd = pokemon_list[rand() % pokemon_list.size()];
+        poke.id = pd.id;
+        poke.identifier = pd.identifier;
+
+        poke.poke_gender = static_cast<gender>(rand() % 2);
+
+        std::vector<pokemon_stats_data> stats_for_pokemon;
+        for (int i = 0; i < pokemon_stats_list.size(); i++) {
+                pokemon_stats_data psd = pokemon_stats_list[i];
+                if (psd.pokemon_id == poke.id) {
+                        stats_for_pokemon.push_back(psd);
+                }
+        }
+
+        poke.hp_base = stats_for_pokemon[0].base_stat;
+        poke.hp_iv = rand() % 16;
+        poke.attack_base = stats_for_pokemon[1].base_stat;
+        poke.attack_iv = rand() % 16;
+        poke.defense_base = stats_for_pokemon[2].base_stat;
+        poke.defense_iv = rand() % 16;
+        poke.special_attack_base = stats_for_pokemon[3].base_stat;
+        poke.special_attack_iv = rand() % 16;
+        poke.special_defense_base = stats_for_pokemon[4].base_stat;
+        poke.special_defense_iv = rand() % 16;
+        poke.speed_base = stats_for_pokemon[5].base_stat;
+        poke.speed_iv = rand() % 16;
+        poke.accuracy_base = stats_for_pokemon[6].base_stat;
+        poke.accuracy_iv = rand() % 16;
+        poke.evasion_base = stats_for_pokemon[7].base_stat;
+        poke.evasion_iv = rand() % 16;
+
+        poke.level = level;
+        poke.hp = (int)((double)((poke.hp_base + poke.hp_iv) * 2 * poke.level) /
+                        100) +
+                  poke.level + 10;
+        poke.attack = (int)((double)((poke.attack_base + poke.attack_iv) * 2 *
+                                     poke.level) /
+                            100) +
+                      5;
+        poke.defense = (int)((double)((poke.defense_base + poke.defense_iv) *
+                                      2 * poke.level) /
+                             100) +
+                       5;
+        poke.special_attack =
+            (int)((double)((poke.special_attack_base + poke.special_attack_iv) *
+                           2 * poke.level) /
+                  100) +
+            5;
+        poke.special_defense = (int)((double)((poke.special_defense_base +
+                                               poke.special_defense_iv) *
+                                              2 * poke.level) /
+                                     100) +
+                               5;
+        poke.speed =
+            (int)((double)((poke.speed_base + poke.speed_iv) * 2 * poke.level) /
+                  100) +
+            5;
+        poke.accuracy = (int)((double)((poke.accuracy_base + poke.accuracy_iv) *
+                                       2 * poke.level) /
+                              100) +
+                        5;
+        poke.evasion = (int)((double)((poke.evasion_base + poke.evasion_iv) *
+                                      2 * poke.level) /
+                             100) +
+                       5;
+
+        std::vector<pokemon_move_data> moves_for_pokemon;
+        find_valid_moves(moves_for_pokemon, pokemon_move_list, poke);
+
+        if (moves_for_pokemon.size() == 0) {
+                const int STRUGGLE_MOVE_INDEX = 165 - 1;
+
+                poke.moves.push_back(move_list[STRUGGLE_MOVE_INDEX]);
+        } else if (moves_for_pokemon.size() == 0) {
+                int random_index_1 = rand() % moves_for_pokemon.size();
+                pokemon_move_data random_move =
+                    moves_for_pokemon[random_index_1];
+                poke.moves.push_back(move_list[random_move.move_id - 1]);
+        } else {
+                int random_index_1 = rand() % moves_for_pokemon.size();
+                pokemon_move_data random_move =
+                    moves_for_pokemon[random_index_1];
+                poke.moves.push_back(move_list[random_move.move_id - 1]);
+
+                int random_index_2;
+                while ((random_index_2 = rand() % moves_for_pokemon.size()) ==
+                       random_index_1)
+                        ;
+                random_move = moves_for_pokemon[random_index_2];
+                poke.moves.push_back(move_list[random_move.move_id - 1]);
+        }
+}
+
 int main(int argc, char *argv[]) {
-
         int seed;
-
         chunk_t *world[WORLD_SIZE][WORLD_SIZE];
         cord_t cur_chunk_pos;
-
         int hiker_dist[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT];
         int rival_dist[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT];
-
         int num_trainers = DEFAULT_NUMTRAINERS;
-
         int opt;
         int option_index = 0;
 
@@ -1944,70 +2066,9 @@ int main(int argc, char *argv[]) {
         // START
         pokemon poke;
 
-        int level = 1;
-
-        poke.level = level;
-
-        pokemon_data pd = pokemon_list[rand() % pokemon_list.size()];
-        poke.id = pd.id;
-        poke.identifier = pd.identifier;
-
-        std::vector<pokemon_stats_data> stats_for_pokemon;
-        for (int i = 0; i < pokemon_stats_list.size(); i++) {
-                pokemon_stats_data psd = pokemon_stats_list[i];
-                if (psd.pokemon_id == poke.id) {
-                        stats_for_pokemon.push_back(psd);
-                }
-        }
-
-        poke.hp = stats_for_pokemon[0].base_stat;
-        poke.hp_iv = rand() % 16;
-        poke.attack = stats_for_pokemon[1].base_stat;
-        poke.attack_iv = rand() % 16;
-        poke.defense = stats_for_pokemon[2].base_stat;
-        poke.defense_iv = rand() % 16;
-        poke.special_attack = stats_for_pokemon[3].base_stat;
-        poke.special_attack_iv = rand() % 16;
-        poke.special_defense = stats_for_pokemon[4].base_stat;
-        poke.special_defense_iv = rand() % 16;
-        poke.speed = stats_for_pokemon[5].base_stat;
-        poke.speed_iv = rand() % 16;
-        poke.accuracy = stats_for_pokemon[6].base_stat;
-        poke.accuracy_iv = rand() % 16;
-        poke.evasion = stats_for_pokemon[7].base_stat;
-        poke.evasion_iv = rand() % 16;
-        poke.poke_gender = static_cast<gender>(rand() % 2);
-
-        std::vector<pokemon_move_data> moves_for_pokemon;
-
-        find_valid_moves(moves_for_pokemon, pokemon_move_list, poke);
-
-        const int STRUGGLE_MOVE_INDEX = 165 - 1;
-
-        if (moves_for_pokemon.size() == 0) {
-                poke.moves.push_back(move_list[STRUGGLE_MOVE_INDEX]);
-        } else if (moves_for_pokemon.size() == 0) {
-                int random_index_1 = rand() % moves_for_pokemon.size();
-                pokemon_move_data random_move =
-                    moves_for_pokemon[random_index_1];
-                poke.moves.push_back(move_list[random_move.move_id - 1]);
-        } else {
-                int random_index_1 = rand() % moves_for_pokemon.size();
-                pokemon_move_data random_move =
-                    moves_for_pokemon[random_index_1];
-                poke.moves.push_back(move_list[random_move.move_id - 1]);
-
-                int random_index_2;
-                while ((random_index_2 = rand() % moves_for_pokemon.size()) ==
-                       random_index_1)
-                        ;
-                random_move = moves_for_pokemon[random_index_2];
-                poke.moves.push_back(move_list[random_move.move_id - 1]);
-        }
-
-        for (int i = 0; i < poke.moves.size(); i++) {
-                std::cout << poke.moves[i] << std::endl;
-        }
+        initialize_rand_pokemon_at_level(poke, 1, pokemon_list,
+                                         pokemon_stats_list, pokemon_move_list,
+                                         move_list);
 
         std::cout << poke << std::endl;
 
