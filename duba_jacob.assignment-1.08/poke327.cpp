@@ -1240,6 +1240,117 @@ int render_game(chunk_t *cur_chunk, char const *status) {
         return 0;
 }
 
+void find_valid_moves(std::vector<pokemon_move_data> &moves_for_pokemon,
+                      std::vector<pokemon_move_data> &pokemon_move_list,
+                      pokemon &poke) {
+        std::set<int> used_moves;
+        for (int i = 0; i < pokemon_move_list.size(); i++) {
+                pokemon_move_data pmd = pokemon_move_list[i];
+                if (pmd.pokemon_id == poke.id &&
+                    pmd.pokemon_move_method_id == 1 &&
+                    pmd.level <= poke.level &&
+                    used_moves.count(pmd.move_id) == 0) {
+                        moves_for_pokemon.push_back(pmd);
+                        used_moves.insert(pmd.move_id);
+                }
+        }
+}
+
+void init_rand_pokemon_at_level(pokemon &poke, int level, csv_data &d) {
+        pokemon_data pd = d.pokemon_list[rand() % d.pokemon_list.size()];
+        poke.id = pd.id;
+        poke.identifier = pd.identifier;
+
+        poke.poke_gender = static_cast<gender>(rand() % 2);
+        poke.shiney = rand() % 8192 == 0;
+
+        std::vector<pokemon_stats_data> stats_for_pokemon;
+        for (int i = 0; i < d.pokemon_stats_list.size(); i++) {
+                pokemon_stats_data psd = d.pokemon_stats_list[i];
+                if (psd.pokemon_id == poke.id) {
+                        stats_for_pokemon.push_back(psd);
+                }
+        }
+
+        poke.hp_base = stats_for_pokemon[0].base_stat;
+        poke.hp_iv = rand() % 16;
+        poke.attack_base = stats_for_pokemon[1].base_stat;
+        poke.attack_iv = rand() % 16;
+        poke.defense_base = stats_for_pokemon[2].base_stat;
+        poke.defense_iv = rand() % 16;
+        poke.special_attack_base = stats_for_pokemon[3].base_stat;
+        poke.special_attack_iv = rand() % 16;
+        poke.special_defense_base = stats_for_pokemon[4].base_stat;
+        poke.special_defense_iv = rand() % 16;
+        poke.speed_base = stats_for_pokemon[5].base_stat;
+        poke.speed_iv = rand() % 16;
+        poke.accuracy_base = stats_for_pokemon[6].base_stat;
+        poke.accuracy_iv = rand() % 16;
+        poke.evasion_base = stats_for_pokemon[7].base_stat;
+        poke.evasion_iv = rand() % 16;
+
+        poke.level = level;
+        poke.hp = (int)((double)((poke.hp_base + poke.hp_iv) * 2 * poke.level) /
+                        100) +
+                  poke.level + 10;
+        poke.attack = (int)((double)((poke.attack_base + poke.attack_iv) * 2 *
+                                     poke.level) /
+                            100) +
+                      5;
+        poke.defense = (int)((double)((poke.defense_base + poke.defense_iv) *
+                                      2 * poke.level) /
+                             100) +
+                       5;
+        poke.special_attack =
+            (int)((double)((poke.special_attack_base + poke.special_attack_iv) *
+                           2 * poke.level) /
+                  100) +
+            5;
+        poke.special_defense = (int)((double)((poke.special_defense_base +
+                                               poke.special_defense_iv) *
+                                              2 * poke.level) /
+                                     100) +
+                               5;
+        poke.speed =
+            (int)((double)((poke.speed_base + poke.speed_iv) * 2 * poke.level) /
+                  100) +
+            5;
+        poke.accuracy = (int)((double)((poke.accuracy_base + poke.accuracy_iv) *
+                                       2 * poke.level) /
+                              100) +
+                        5;
+        poke.evasion = (int)((double)((poke.evasion_base + poke.evasion_iv) *
+                                      2 * poke.level) /
+                             100) +
+                       5;
+
+        std::vector<pokemon_move_data> moves_for_pokemon;
+        find_valid_moves(moves_for_pokemon, d.pokemon_move_list, poke);
+
+        if (moves_for_pokemon.size() == 0) {
+                const int STRUGGLE_MOVE_INDEX = 165 - 1;
+
+                poke.moves.push_back(d.move_list[STRUGGLE_MOVE_INDEX]);
+        } else if (moves_for_pokemon.size() == 1) {
+                int random_index_1 = rand() % moves_for_pokemon.size();
+                pokemon_move_data random_move =
+                    moves_for_pokemon[random_index_1];
+                poke.moves.push_back(d.move_list[random_move.move_id - 1]);
+        } else {
+                int random_index_1 = rand() % moves_for_pokemon.size();
+                pokemon_move_data random_move =
+                    moves_for_pokemon[random_index_1];
+                poke.moves.push_back(d.move_list[random_move.move_id - 1]);
+
+                int random_index_2;
+                while ((random_index_2 = rand() % moves_for_pokemon.size()) ==
+                       random_index_1)
+                        ;
+                random_move = moves_for_pokemon[random_index_2];
+                poke.moves.push_back(d.move_list[random_move.move_id - 1]);
+        }
+}
+
 int start_pokemon_battle(chunk_t *cur_chunk, cord_t trainer_cord) {
 
         render_game(cur_chunk, "Placeholder Pokemon Battle");
@@ -1450,7 +1561,8 @@ int handle_pc_movements(cord_t *next_cord, cord_t entity_pos,
                         chunk_t *cur_chunk, int *cost_to_move,
                         int *valid_command, char const **message,
                         int hiker_dist[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT],
-                        int rival_dist[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT]) {
+                        int rival_dist[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT],
+                        csv_data &csv) {
         land_t next_land = cur_chunk->terrain[next_cord->x][next_cord->y];
         *cost_to_move = get_land_cost_pc(next_land);
         entity_t *entity = &cur_chunk->entities[next_cord->x][next_cord->y];
@@ -1475,8 +1587,25 @@ int handle_pc_movements(cord_t *next_cord, cord_t entity_pos,
         if (next_land == TALL_GRASS) {
                 int pokemon_encounter = rand() % 10;
                 if (pokemon_encounter == 0) {
-                        *valid_command = 0;
-                        *message = "sdkaipsmdkasd";
+                        int min_level, max_level;
+                        if (cur_chunk->dist <= 200) {
+                                min_level = 1;
+                                max_level = cur_chunk->dist / 2 + 1;
+                        } else {
+                                min_level = (cur_chunk->dist - 200) / 2 + 1;
+                                max_level = 100;
+                        }
+                        int poke_level = rand() % max_level + min_level;
+                        pokemon poke;
+                        init_rand_pokemon_at_level(poke, poke_level, csv);
+
+                        erase();
+                        printw("A wild %s appeared!", poke.identifier.c_str());
+                        refresh();
+
+                        while (getch() != KEY_ESC)
+                                ;
+
                         return 0;
                 }
         }
@@ -1633,73 +1762,73 @@ int do_tick(chunk_t *world[WORLD_SIZE][WORLD_SIZE], cord_t *cur_chunk_cord,
                         case '7':
                                 next_cord = (cord_t){entity_pos.x - 1,
                                                      entity_pos.y - 1};
-                                handle_pc_movements(&next_cord, entity_pos,
-                                                    cur_chunk, &cost_to_move,
-                                                    &turn_completed, &message,
-                                                    hiker_dist, rival_dist);
+                                handle_pc_movements(
+                                    &next_cord, entity_pos, cur_chunk,
+                                    &cost_to_move, &turn_completed, &message,
+                                    hiker_dist, rival_dist, csv);
                                 break;
                         case 'k':
                         case '8':
                                 next_cord =
                                     (cord_t){entity_pos.x, entity_pos.y - 1};
-                                handle_pc_movements(&next_cord, entity_pos,
-                                                    cur_chunk, &cost_to_move,
-                                                    &turn_completed, &message,
-                                                    hiker_dist, rival_dist);
+                                handle_pc_movements(
+                                    &next_cord, entity_pos, cur_chunk,
+                                    &cost_to_move, &turn_completed, &message,
+                                    hiker_dist, rival_dist, csv);
                                 break;
                         case '9':
                         case 'u':
                                 next_cord = (cord_t){entity_pos.x + 1,
                                                      entity_pos.y - 1};
-                                handle_pc_movements(&next_cord, entity_pos,
-                                                    cur_chunk, &cost_to_move,
-                                                    &turn_completed, &message,
-                                                    hiker_dist, rival_dist);
+                                handle_pc_movements(
+                                    &next_cord, entity_pos, cur_chunk,
+                                    &cost_to_move, &turn_completed, &message,
+                                    hiker_dist, rival_dist, csv);
                                 break;
                         case '6':
                         case 'l':
                                 next_cord =
                                     (cord_t){entity_pos.x + 1, entity_pos.y};
-                                handle_pc_movements(&next_cord, entity_pos,
-                                                    cur_chunk, &cost_to_move,
-                                                    &turn_completed, &message,
-                                                    hiker_dist, rival_dist);
+                                handle_pc_movements(
+                                    &next_cord, entity_pos, cur_chunk,
+                                    &cost_to_move, &turn_completed, &message,
+                                    hiker_dist, rival_dist, csv);
                                 break;
                         case '3':
                         case 'n':
                                 next_cord = (cord_t){entity_pos.x + 1,
                                                      entity_pos.y + 1};
-                                handle_pc_movements(&next_cord, entity_pos,
-                                                    cur_chunk, &cost_to_move,
-                                                    &turn_completed, &message,
-                                                    hiker_dist, rival_dist);
+                                handle_pc_movements(
+                                    &next_cord, entity_pos, cur_chunk,
+                                    &cost_to_move, &turn_completed, &message,
+                                    hiker_dist, rival_dist, csv);
                                 break;
                         case '2':
                         case 'j':
                                 next_cord =
                                     (cord_t){entity_pos.x, entity_pos.y + 1};
-                                handle_pc_movements(&next_cord, entity_pos,
-                                                    cur_chunk, &cost_to_move,
-                                                    &turn_completed, &message,
-                                                    hiker_dist, rival_dist);
+                                handle_pc_movements(
+                                    &next_cord, entity_pos, cur_chunk,
+                                    &cost_to_move, &turn_completed, &message,
+                                    hiker_dist, rival_dist, csv);
                                 break;
                         case '1':
                         case 'b':
                                 next_cord = (cord_t){entity_pos.x - 1,
                                                      entity_pos.y + 1};
-                                handle_pc_movements(&next_cord, entity_pos,
-                                                    cur_chunk, &cost_to_move,
-                                                    &turn_completed, &message,
-                                                    hiker_dist, rival_dist);
+                                handle_pc_movements(
+                                    &next_cord, entity_pos, cur_chunk,
+                                    &cost_to_move, &turn_completed, &message,
+                                    hiker_dist, rival_dist, csv);
                                 break;
                         case 'h':
                         case '4':
                                 next_cord =
                                     (cord_t){entity_pos.x - 1, entity_pos.y};
-                                handle_pc_movements(&next_cord, entity_pos,
-                                                    cur_chunk, &cost_to_move,
-                                                    &turn_completed, &message,
-                                                    hiker_dist, rival_dist);
+                                handle_pc_movements(
+                                    &next_cord, entity_pos, cur_chunk,
+                                    &cost_to_move, &turn_completed, &message,
+                                    hiker_dist, rival_dist, csv);
                                 break;
                         case '>':
                                 land_pc_is_on =
@@ -1719,10 +1848,10 @@ int do_tick(chunk_t *world[WORLD_SIZE][WORLD_SIZE], cord_t *cur_chunk_cord,
                         case ' ':
                         case '.':
                                 next_cord = entity_pos;
-                                handle_pc_movements(&next_cord, entity_pos,
-                                                    cur_chunk, &cost_to_move,
-                                                    &turn_completed, &message,
-                                                    hiker_dist, rival_dist);
+                                handle_pc_movements(
+                                    &next_cord, entity_pos, cur_chunk,
+                                    &cost_to_move, &turn_completed, &message,
+                                    hiker_dist, rival_dist, csv);
                                 break;
                         case 't':
                                 display_trainers();
@@ -1881,119 +2010,6 @@ int do_tick(chunk_t *world[WORLD_SIZE][WORLD_SIZE], cord_t *cur_chunk_cord,
         return 0;
 }
 
-void find_valid_moves(std::vector<pokemon_move_data> &moves_for_pokemon,
-                      std::vector<pokemon_move_data> &pokemon_move_list,
-                      pokemon &poke) {
-        std::set<int> used_moves;
-        for (int i = 0; i < pokemon_move_list.size(); i++) {
-                pokemon_move_data pmd = pokemon_move_list[i];
-                if (pmd.pokemon_id == poke.id &&
-                    pmd.pokemon_move_method_id == 1 &&
-                    pmd.level <= poke.level &&
-                    used_moves.count(pmd.move_id) == 0) {
-                        moves_for_pokemon.push_back(pmd);
-                        used_moves.insert(pmd.move_id);
-                }
-        }
-}
-
-void level_up_pokemon(pokemon &p) {}
-
-void initialize_rand_pokemon_at_level(pokemon &poke, int level, csv_data &d) {
-        pokemon_data pd = d.pokemon_list[rand() % d.pokemon_list.size()];
-        poke.id = pd.id;
-        poke.identifier = pd.identifier;
-
-        poke.poke_gender = static_cast<gender>(rand() % 2);
-        poke.shiney = rand() % 8192 == 0;
-
-        std::vector<pokemon_stats_data> stats_for_pokemon;
-        for (int i = 0; i < d.pokemon_stats_list.size(); i++) {
-                pokemon_stats_data psd = d.pokemon_stats_list[i];
-                if (psd.pokemon_id == poke.id) {
-                        stats_for_pokemon.push_back(psd);
-                }
-        }
-
-        poke.hp_base = stats_for_pokemon[0].base_stat;
-        poke.hp_iv = rand() % 16;
-        poke.attack_base = stats_for_pokemon[1].base_stat;
-        poke.attack_iv = rand() % 16;
-        poke.defense_base = stats_for_pokemon[2].base_stat;
-        poke.defense_iv = rand() % 16;
-        poke.special_attack_base = stats_for_pokemon[3].base_stat;
-        poke.special_attack_iv = rand() % 16;
-        poke.special_defense_base = stats_for_pokemon[4].base_stat;
-        poke.special_defense_iv = rand() % 16;
-        poke.speed_base = stats_for_pokemon[5].base_stat;
-        poke.speed_iv = rand() % 16;
-        poke.accuracy_base = stats_for_pokemon[6].base_stat;
-        poke.accuracy_iv = rand() % 16;
-        poke.evasion_base = stats_for_pokemon[7].base_stat;
-        poke.evasion_iv = rand() % 16;
-
-        poke.level = level;
-        poke.hp = (int)((double)((poke.hp_base + poke.hp_iv) * 2 * poke.level) /
-                        100) +
-                  poke.level + 10;
-        poke.attack = (int)((double)((poke.attack_base + poke.attack_iv) * 2 *
-                                     poke.level) /
-                            100) +
-                      5;
-        poke.defense = (int)((double)((poke.defense_base + poke.defense_iv) *
-                                      2 * poke.level) /
-                             100) +
-                       5;
-        poke.special_attack =
-            (int)((double)((poke.special_attack_base + poke.special_attack_iv) *
-                           2 * poke.level) /
-                  100) +
-            5;
-        poke.special_defense = (int)((double)((poke.special_defense_base +
-                                               poke.special_defense_iv) *
-                                              2 * poke.level) /
-                                     100) +
-                               5;
-        poke.speed =
-            (int)((double)((poke.speed_base + poke.speed_iv) * 2 * poke.level) /
-                  100) +
-            5;
-        poke.accuracy = (int)((double)((poke.accuracy_base + poke.accuracy_iv) *
-                                       2 * poke.level) /
-                              100) +
-                        5;
-        poke.evasion = (int)((double)((poke.evasion_base + poke.evasion_iv) *
-                                      2 * poke.level) /
-                             100) +
-                       5;
-
-        std::vector<pokemon_move_data> moves_for_pokemon;
-        find_valid_moves(moves_for_pokemon, d.pokemon_move_list, poke);
-
-        if (moves_for_pokemon.size() == 0) {
-                const int STRUGGLE_MOVE_INDEX = 165 - 1;
-
-                poke.moves.push_back(d.move_list[STRUGGLE_MOVE_INDEX]);
-        } else if (moves_for_pokemon.size() == 1) {
-                int random_index_1 = rand() % moves_for_pokemon.size();
-                pokemon_move_data random_move =
-                    moves_for_pokemon[random_index_1];
-                poke.moves.push_back(d.move_list[random_move.move_id - 1]);
-        } else {
-                int random_index_1 = rand() % moves_for_pokemon.size();
-                pokemon_move_data random_move =
-                    moves_for_pokemon[random_index_1];
-                poke.moves.push_back(d.move_list[random_move.move_id - 1]);
-
-                int random_index_2;
-                while ((random_index_2 = rand() % moves_for_pokemon.size()) ==
-                       random_index_1)
-                        ;
-                random_move = moves_for_pokemon[random_index_2];
-                poke.moves.push_back(d.move_list[random_move.move_id - 1]);
-        }
-}
-
 int main(int argc, char *argv[]) {
         int seed;
         chunk_t *world[WORLD_SIZE][WORLD_SIZE];
@@ -2018,7 +2034,7 @@ int main(int argc, char *argv[]) {
         noecho();
         init_color_pairs();
 
-        clear();
+        erase();
         printw("Now loading...\n\n");
         refresh();
 
