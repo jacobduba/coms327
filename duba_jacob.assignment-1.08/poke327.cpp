@@ -1092,12 +1092,16 @@ int rand_level_given_dist(chunk_t *chunk) {
         int min_level, max_level;
         if (chunk->dist <= 200) {
                 min_level = 1;
-                max_level = chunk->dist / 2 + 1;
+                max_level = chunk->dist / 2;
         } else {
-                min_level = (chunk->dist - 200) / 2 + 1;
+                min_level = (chunk->dist - 200) / 2;
                 max_level = 100;
         }
-        return rand() % max_level + min_level;
+        int range = max_level - min_level;
+        if (range == 0) {
+                return min_level;
+        }
+        return rand() % (max_level - min_level) + min_level;
 }
 
 void add_random_pokemon_to_trainers(chunk_t *chunk, csv_data csv, cord_t cord) {
@@ -2135,6 +2139,13 @@ int main(int argc, char *argv[]) {
         world[cur_chunk_pos.x][cur_chunk_pos.y]->pc_pos = pc_pos;
 
         const int num_entities = num_trainers + 1;
+
+        pokemon poke1;
+        init_rand_pokemon_at_level(poke1, 1, data);
+        pokemon poke2;
+        init_rand_pokemon_at_level(poke2, 1, data);
+        pokemon poke3;
+        init_rand_pokemon_at_level(poke3, 1, data);
 
         int quit_game = 0;
         while (!quit_game) {
