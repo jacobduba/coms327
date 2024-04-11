@@ -102,6 +102,7 @@ typedef class chunk {
         struct sc_heap *event_queue;
         cord_t pc_pos;
         int tick;
+        int dist;
 } chunk_t;
 
 enum gender { MALE = 0, FEMALE = 1 };
@@ -1102,10 +1103,10 @@ int gen_chunk_if_not_exists(chunk_t *world[WORLD_SIZE][WORLD_SIZE],
         c->s_gate_x = get_gate_coordinates(
             world, (cord_t){cur_chunk.x, cur_chunk.y + 1}, NORTH_GATE);
 
-        manhatten_dist = abs(cur_chunk.x - WORLD_SIZE / 2) +
-                         abs(cur_chunk.y - WORLD_SIZE / 2);
-        if (manhatten_dist < 200) {
-                prob_of_building = (float)-45 * manhatten_dist / 200 + 50;
+        c->dist = abs(cur_chunk.x - WORLD_SIZE / 2) +
+                  abs(cur_chunk.y - WORLD_SIZE / 2);
+        if (c->dist < 200) {
+                prob_of_building = (float)-45 * c->dist / 200 + 50;
         } else {
                 prob_of_building = 5;
         }
@@ -1471,6 +1472,15 @@ int handle_pc_movements(cord_t *next_cord, cord_t entity_pos,
                 return 0;
         }
 
+        if (next_land == TALL_GRASS) {
+                int pokemon_encounter = rand() % 10;
+                if (pokemon_encounter == 0) {
+                        *valid_command = 0;
+                        *message = "sdkaipsmdkasd";
+                        return 0;
+                }
+        }
+
         if (*cost_to_move == -1) { // ||
                 // !(entity_type == NO_ENTITY || entity_type == PC)) {
                 *valid_command = 0;
@@ -1585,7 +1595,7 @@ void display_fly_screen(int *turn_completed, char const **message,
 int do_tick(chunk_t *world[WORLD_SIZE][WORLD_SIZE], cord_t *cur_chunk_cord,
             int num_entities, int hiker_dist[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT],
             int rival_dist[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT], int *quit_game,
-            int num_trainers) {
+            int num_trainers, csv_data &csv) {
         chunk_t *cur_chunk = world[cur_chunk_cord->x][cur_chunk_cord->y];
         // Want to increment game_tick before sc_heap_peak, but don't want to
         // change the tick we're manipulating here
@@ -1594,9 +1604,9 @@ int do_tick(chunk_t *world[WORLD_SIZE][WORLD_SIZE], cord_t *cur_chunk_cord,
         if (sc_heap_peek(cur_chunk->event_queue)->key != cur_tick)
                 return 0;
 
-        struct sc_heap_data *data = sc_heap_pop(cur_chunk->event_queue);
+        struct sc_heap_data *heap_data = sc_heap_pop(cur_chunk->event_queue);
 
-        event_t event = *(event_t *)data->data;
+        event_t event = *(event_t *)heap_data->data;
         cord_t entity_pos = event.pos;
         entity_t *entity = &cur_chunk->entities[entity_pos.x][entity_pos.y];
 
@@ -1764,7 +1774,7 @@ int do_tick(chunk_t *world[WORLD_SIZE][WORLD_SIZE], cord_t *cur_chunk_cord,
                 break;
         }
 
-        free(data->data);
+        free(heap_data->data);
 
         if (cost_to_move == INT_MAX)
                 return 0;
@@ -1889,21 +1899,17 @@ void find_valid_moves(std::vector<pokemon_move_data> &moves_for_pokemon,
 
 void level_up_pokemon(pokemon &p) {}
 
-void initialize_rand_pokemon_at_level(
-    pokemon &poke, int level, std::vector<pokemon_data> &pokemon_list,
-    std::vector<pokemon_stats_data> &pokemon_stats_list,
-    std::vector<pokemon_move_data> &pokemon_move_list,
-    std::vector<move_data> &move_list) {
-        pokemon_data pd = pokemon_list[rand() % pokemon_list.size()];
+void initialize_rand_pokemon_at_level(pokemon &poke, int level, csv_data &d) {
+        pokemon_data pd = d.pokemon_list[rand() % d.pokemon_list.size()];
         poke.id = pd.id;
         poke.identifier = pd.identifier;
 
         poke.poke_gender = static_cast<gender>(rand() % 2);
-        poke.shiney = rand() % 2;
+        poke.shiney = rand() % 8192 == 0;
 
         std::vector<pokemon_stats_data> stats_for_pokemon;
-        for (int i = 0; i < pokemon_stats_list.size(); i++) {
-                pokemon_stats_data psd = pokemon_stats_list[i];
+        for (int i = 0; i < d.pokemon_stats_list.size(); i++) {
+                pokemon_stats_data psd = d.pokemon_stats_list[i];
                 if (psd.pokemon_id == poke.id) {
                         stats_for_pokemon.push_back(psd);
                 }
@@ -1962,29 +1968,29 @@ void initialize_rand_pokemon_at_level(
                        5;
 
         std::vector<pokemon_move_data> moves_for_pokemon;
-        find_valid_moves(moves_for_pokemon, pokemon_move_list, poke);
+        find_valid_moves(moves_for_pokemon, d.pokemon_move_list, poke);
 
         if (moves_for_pokemon.size() == 0) {
                 const int STRUGGLE_MOVE_INDEX = 165 - 1;
 
-                poke.moves.push_back(move_list[STRUGGLE_MOVE_INDEX]);
+                poke.moves.push_back(d.move_list[STRUGGLE_MOVE_INDEX]);
         } else if (moves_for_pokemon.size() == 1) {
                 int random_index_1 = rand() % moves_for_pokemon.size();
                 pokemon_move_data random_move =
                     moves_for_pokemon[random_index_1];
-                poke.moves.push_back(move_list[random_move.move_id - 1]);
+                poke.moves.push_back(d.move_list[random_move.move_id - 1]);
         } else {
                 int random_index_1 = rand() % moves_for_pokemon.size();
                 pokemon_move_data random_move =
                     moves_for_pokemon[random_index_1];
-                poke.moves.push_back(move_list[random_move.move_id - 1]);
+                poke.moves.push_back(d.move_list[random_move.move_id - 1]);
 
                 int random_index_2;
                 while ((random_index_2 = rand() % moves_for_pokemon.size()) ==
                        random_index_1)
                         ;
                 random_move = moves_for_pokemon[random_index_2];
-                poke.moves.push_back(move_list[random_move.move_id - 1]);
+                poke.moves.push_back(d.move_list[random_move.move_id - 1]);
         }
 }
 
@@ -2003,38 +2009,20 @@ int main(int argc, char *argv[]) {
         printf("Using seed: %d\n", seed);
         srand(seed);
 
-        // initscr();
-        // cbreak(); // Do not buffer inputs
-        // curs_set(0);
-        // keypad(stdscr, TRUE);
-        // start_color();
-        // set_escdelay(0);
-        // noecho();
-        // init_color_pairs();
+        initscr();
+        cbreak(); // Do not buffer inputs
+        curs_set(0);
+        keypad(stdscr, TRUE);
+        start_color();
+        set_escdelay(0);
+        noecho();
+        init_color_pairs();
 
-        // clear();
-        // printw("Now loading...\n\n");
-        // refresh();
+        clear();
+        printw("Now loading...\n\n");
+        refresh();
 
-        std::vector<pokemon_data> pokemon_list;
-        load_file<pokemon_data>(pokemon_list, "pokemon.csv");
-        std::vector<move_data> move_list;
-        load_file<move_data>(move_list, "moves.csv");
-        std::vector<pokemon_move_data> pokemon_move_list;
-        load_file<pokemon_move_data>(pokemon_move_list, "pokemon_moves.csv");
-        std::vector<pokemon_species_data> pokemon_species_list;
-        load_file<pokemon_species_data>(pokemon_species_list,
-                                        "pokemon_species.csv");
-        std::vector<experience_data> experience_list;
-        load_file<experience_data>(experience_list, "experience.csv");
-        std::vector<type_names_data> type_names_list;
-        load_file<type_names_data>(type_names_list, "type_names.csv");
-        std::vector<pokemon_stats_data> pokemon_stats_list;
-        load_file<pokemon_stats_data>(pokemon_stats_list, "pokemon_stats.csv");
-        std::vector<stats_data> stats_list;
-        load_file<stats_data>(stats_list, "stats.csv");
-        std::vector<pokemon_types_data> pokemon_types_list;
-        load_file<pokemon_types_data>(pokemon_types_list, "pokemon_types.csv");
+        csv_data data;
 
         struct option long_options[] = {
             {
@@ -2065,19 +2053,6 @@ int main(int argc, char *argv[]) {
                 }
         }
 
-        // START
-        pokemon poke;
-
-        initialize_rand_pokemon_at_level(poke, 1, pokemon_list,
-                                         pokemon_stats_list, pokemon_move_list,
-                                         move_list);
-
-        std::cout << poke << std::endl;
-
-        return 0;
-
-        // END
-
         for (int x = 0; x < WORLD_SIZE; x++) {
                 for (int y = 0; y < WORLD_SIZE; y++) {
                         world[x][y] = NULL;
@@ -2101,7 +2076,7 @@ int main(int argc, char *argv[]) {
         int quit_game = 0;
         while (!quit_game) {
                 do_tick(world, &cur_chunk_pos, num_entities, hiker_dist,
-                        rival_dist, &quit_game, num_trainers);
+                        rival_dist, &quit_game, num_trainers, data);
         }
 
         endwin();

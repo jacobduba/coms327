@@ -158,3 +158,31 @@ struct pokemon_types_data {
 std::ostream &operator<<(std::ostream &o, const pokemon_types_data &m);
 
 std::istream &operator>>(std::istream &o, pokemon_types_data &m);
+
+class csv_data {
+      public:
+        std::vector<pokemon_data> pokemon_list;
+        std::vector<move_data> move_list;
+        std::vector<pokemon_move_data> pokemon_move_list;
+        std::vector<pokemon_species_data> pokemon_species_list;
+        std::vector<experience_data> experience_list;
+        std::vector<type_names_data> type_names_list;
+        std::vector<pokemon_stats_data> pokemon_stats_list;
+        std::vector<stats_data> stats_list;
+        std::vector<pokemon_types_data> pokemon_types_list;
+        csv_data() {
+                load_file<pokemon_data>(pokemon_list, "pokemon.csv");
+                load_file<move_data>(move_list, "moves.csv");
+                load_file<pokemon_move_data>(pokemon_move_list,
+                                             "pokemon_moves.csv");
+                load_file<pokemon_species_data>(pokemon_species_list,
+                                                "pokemon_species.csv");
+                load_file<experience_data>(experience_list, "experience.csv");
+                load_file<type_names_data>(type_names_list, "type_names.csv");
+                load_file<pokemon_stats_data>(pokemon_stats_list,
+                                              "pokemon_stats.csv");
+                load_file<stats_data>(stats_list, "stats.csv");
+                load_file<pokemon_types_data>(pokemon_types_list,
+                                              "pokemon_types.csv");
+        }
+};
