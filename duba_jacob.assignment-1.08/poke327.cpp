@@ -1600,11 +1600,35 @@ int handle_pc_movements(cord_t *next_cord, cord_t entity_pos,
                         init_rand_pokemon_at_level(poke, poke_level, csv);
 
                         erase();
-                        printw("A wild %s appeared!", poke.identifier.c_str());
+                        printw("A wild %s appears!\n", poke.identifier.c_str());
+                        printw("Level: %d\n", poke.level);
+                        printw("HP: %d\n", poke.hp);
+                        printw("Attack: %d\n", poke.attack);
+                        printw("Defense: %d\n", poke.defense);
+                        printw("Special Attack: %d\n", poke.special_attack);
+                        printw("Special Defense: %d\n", poke.special_defense);
+                        printw("Speed: %d\n", poke.speed);
+                        printw("Accuracy: %d\n", poke.accuracy);
+                        printw("Evasion: %d\n", poke.evasion);
+                        printw("Moves:\n");
+                        for (int i = 0; i < poke.moves.size(); i++) {
+                                printw("- %s\n",
+                                       poke.moves[i].identifier.c_str());
+                        }
+                        if (poke.poke_gender == gender::MALE) {
+                                printw("Gender: Male\n");
+                        } else {
+                                printw("Gender: Female\n");
+                        }
+                        if (poke.shiney) {
+                                printw("Pokemon is shiney!!!\n");
+                        } else {
+                                printw("Pokemon is not shiney.\n");
+                        }
+
                         refresh();
 
-                        while (getch() != KEY_ESC)
-                                ;
+                        getch();
 
                         return 0;
                 }
