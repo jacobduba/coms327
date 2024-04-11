@@ -1,3 +1,119 @@
+commit ca80a4792948424599bff8491329fa23ba79cfe3
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Thu Apr 11 02:35:29 2024 -0500
+
+    Dont allow trainers to have more than 6 pokes
+
+commit d5130919b14867fa19f49aa8ccecae4ef6ef4444
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Thu Apr 11 02:06:22 2024 -0500
+
+    Fix levels bug
+
+commit 0ab32f1551eb200c49838deade0a8ee2f80c4dfe
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Thu Apr 11 01:50:22 2024 -0500
+
+    Trainers now have pokemon
+
+commit adcd5cec37cb5d29b924e5ea4b7508fbe7cf0566
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Thu Apr 11 00:59:23 2024 -0500
+
+    Revert "Move entities to pointers"
+    
+    This reverts commit c34ccb261119304355670239fc6ac7c393d6959a.
+
+commit c34ccb261119304355670239fc6ac7c393d6959a
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Thu Apr 11 00:53:47 2024 -0500
+
+    Move entities to pointers
+
+commit 5d94f779abd86b3f804d852b6a5d904f7adb0e5b
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Thu Apr 11 00:25:35 2024 -0500
+
+    Show pokemon
+
+commit 836cbb659e39d2d1cc017265bf3f19f82c731507
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Wed Apr 10 22:08:11 2024 -0500
+
+    Wild pokemon appearing
+
+commit ff186c9dad557a7eef4b8dbde094120d968c5f04
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Wed Apr 10 21:41:26 2024 -0500
+
+    Move csv data to its own class. Fix shineys.
+
+commit 55fa93d10cf19f70de290e04b685e86c9c8744b5
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Wed Apr 10 20:45:36 2024 -0500
+
+    Fixed bug where move size 1 was not handled
+
+commit ae5027f8a4b73241e257b20df89bb1af24a9fa65
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Wed Apr 10 20:15:05 2024 -0500
+
+    Calculates correct stats for level
+
+commit 6a2c2177fa28caad445d46b8b81b0adeb1fe0bce
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Wed Apr 10 17:42:08 2024 -0500
+
+    Add two random moves
+
+commit 3fd526ed386a62b4c9f54e6fe6d1e4a989042ba5
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Wed Apr 10 14:57:34 2024 -0500
+
+    Create random level 1 pokemon
+
+commit 21c79f31ef29ceccdd8c8af80a8066c6450162b7
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Tue Apr 9 15:10:19 2024 -0500
+
+    Move from malloc to new for chunk
+
+commit 20e672de7fb521266077dc5ed38b7b487e485c9a
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Tue Apr 9 14:59:46 2024 -0500
+
+    Fixed bug with fly input
+
+commit d56816317f3c755b4016f5e27ebfd59609d2a81e
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Tue Apr 9 14:56:07 2024 -0500
+
+    Fix bug with number of trainers
+
+commit 357341c8fd6366b56b6f77e3ca1d3a8fc25cfca1
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Tue Apr 9 14:46:44 2024 -0500
+
+    Load files, show loading screen
+
+commit d34baf86b3f3ec3cf8485c89f800230076fa62fb
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Tue Apr 9 10:46:52 2024 -0500
+
+    Week 12
+
+commit 69d2fca4b5d117d627e9e638e6c79dfaaf72280d
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Mon Apr 8 15:38:50 2024 -0500
+
+    Only spawn one hiker/rival per map.
+
+commit a53e2ffb3073c1b75157d26419c846501271ca0b
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Mon Apr 8 15:09:55 2024 -0500
+
+    Start 1.08
+
 commit 2d5237ffa1fca048f3f16fe37ff2aaccd0995730
 Author: Jacob Duba <jacob@mooshoe.me>
 Date:   Thu Apr 4 14:15:09 2024 -0500
