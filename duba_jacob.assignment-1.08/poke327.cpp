@@ -78,6 +78,33 @@ typedef enum entity_type {
         // SWIMMER
 } entity_type_t;
 
+typedef class entity {
+      public:
+        entity_type_t entity_type;
+        entity_type_t movement_type;
+        int defeated;
+        void *data;
+} entity_t;
+
+#define NUM_TRAINER_TYPES 6
+
+typedef struct event {
+        // int seq_number;
+        cord_t pos;
+} event_t;
+
+typedef class chunk {
+      public:
+        land_t terrain[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT];
+        int n_gate_x, s_gate_x, e_gate_y,
+            w_gate_y; // TODO move out. Will never be used
+        entity_t entities[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT];
+        struct sc_heap *event_queue;
+        cord_t pc_pos;
+        int tick;
+        int dist;
+} chunk_t;
+
 enum gender { MALE = 0, FEMALE = 1 };
 
 struct pokemon {
@@ -112,34 +139,6 @@ struct pokemon {
         gender poke_gender;
         int shiney;
 };
-
-typedef class entity {
-      public:
-        entity_type_t entity_type;
-        entity_type_t movement_type;
-        int defeated;
-        // std::vector<pokemon> pokes;
-        void *data;
-} entity_t;
-
-#define NUM_TRAINER_TYPES 6
-
-typedef struct event {
-        // int seq_number;
-        cord_t pos;
-} event_t;
-
-typedef class chunk {
-      public:
-        land_t terrain[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT];
-        int n_gate_x, s_gate_x, e_gate_y,
-            w_gate_y; // TODO move out. Will never be used
-        entity_t *entities[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT];
-        struct sc_heap *event_queue;
-        cord_t pc_pos;
-        int tick;
-        int dist;
-} chunk_t;
 
 std::ostream &operator<<(std::ostream &o, const pokemon &p) {
         o << "pokemon[id: " << p.id << ", identifier: " << p.identifier
@@ -431,8 +430,8 @@ int get_land_cost_wanderer(land_t type) {
  * Else print land at the pos.
  */
 void print_pos(cord_t pos, chunk_t *chunk) {
-        if (chunk->entities[pos.x][pos.y]) {
-                print_entity_t(chunk->entities[pos.x][pos.y]->entity_type);
+        if (chunk->entities[pos.x][pos.y].entity_type != NO_ENTITY) {
+                print_entity_t(chunk->entities[pos.x][pos.y].entity_type);
                 return;
         }
 
@@ -959,18 +958,18 @@ int get_gate_coordinates(chunk_t *world[WORLD_SIZE][WORLD_SIZE], cord_t chunk,
 
 void spawn_entity(chunk_t *chunk, entity_type_t entity_type, cord_t cord,
                   int tick) {
-        chunk->entities[cord.x][cord.y] = (entity_t *)malloc(sizeof(entity_t));
-        entity_t *entity = chunk->entities[cord.x][cord.y];
-        entity->entity_type = entity_type;
-        entity->movement_type = entity_type;
-        entity->defeated = 0;
+        entity_t entity;
+        entity.entity_type = entity_type;
+        entity.movement_type = entity_type;
+        entity.defeated = 0;
 
         if (entity_type == WANDERER || entity_type == PACER ||
             entity_type == EXPLORER) {
-                entity->data = malloc(sizeof(dir_t));
+                entity.data = malloc(sizeof(dir_t));
                 dir_t random_dir = static_cast<dir_t>(rand() % NUM_DIRECTIONS);
-                *((dir_t *)entity->data) = random_dir;
+                *((dir_t *)entity.data) = random_dir;
         }
+        chunk->entities[cord.x][cord.y] = entity;
 
         event_t *event = (event_t *)malloc(sizeof(event_t));
         event->pos = cord;
@@ -990,7 +989,7 @@ cord_t spawn_entity_randomly(chunk_t *chunk, entity_type_t entity_type,
         do {
                 cord.x = rand() % (CHUNK_X_WIDTH - 2) + 1;
                 cord.y = rand() % (CHUNK_Y_HEIGHT - 2) + 1;
-        } while (chunk->entities[cord.x][cord.y] ||
+        } while (chunk->entities[cord.x][cord.y].entity_type != NO_ENTITY ||
                  get_land_cost(chunk->terrain[cord.x][cord.y]) == -1);
 
         spawn_entity(chunk, entity_type, cord, tick);
@@ -1011,7 +1010,8 @@ int spawn_trainers(chunk_t *chunk, int num_trainers) {
 
         for (int y = 0; y < CHUNK_Y_HEIGHT; y++) {
                 for (int x = 0; x < CHUNK_X_WIDTH; x++) {
-                        chunk->entities[x][y] = NULL;
+                        chunk->entities[x][y] =
+                            (entity_t){NO_ENTITY, NO_ENTITY, 0, NULL};
                 }
         }
 
@@ -1359,7 +1359,8 @@ int start_pokemon_battle(chunk_t *cur_chunk, cord_t trainer_cord) {
                 command = getch();
         }
         // entity_t *trainer = &cur_chunk->entities[next_cord->x][next_cord->y];
-        entity_t *trainer = cur_chunk->entities[trainer_cord.x][trainer_cord.y];
+        entity_t *trainer =
+            &cur_chunk->entities[trainer_cord.x][trainer_cord.y];
 
         if (trainer->entity_type == RIVAL || trainer->entity_type == HIKER) {
                 trainer->movement_type = EXPLORER;
@@ -1385,18 +1386,17 @@ void explore_tile_lowest_distance(chunk_t *cur_chunk,
         // If entity is a player, trigger event
 
         entity_t *explored_entity =
-            cur_chunk->entities[possible_next_cord.x][possible_next_cord.y];
-        entity_t *cur_entity = cur_chunk->entities[entity_pos.x][entity_pos.y];
+            &cur_chunk->entities[possible_next_cord.x][possible_next_cord.y];
+        entity_t *cur_entity = &cur_chunk->entities[entity_pos.x][entity_pos.y];
 
-        if (explored_entity && explored_entity->entity_type == PC &&
-            !cur_entity->defeated) {
+        if (explored_entity->entity_type == PC && !cur_entity->defeated) {
                 start_pokemon_battle(cur_chunk, entity_pos);
                 *best_next_cord = entity_pos;
                 *best_next_cord_dist = 0;
                 return;
         }
 
-        if (!explored_entity)
+        if (explored_entity->entity_type != NO_ENTITY)
                 return;
 
         *best_next_cord = possible_next_cord;
@@ -1490,16 +1490,15 @@ void find_pacer_next_tile(entity_t cur_entity, cord_t entity_pos,
 
         cord_t new_pos = find_tile_in_direction(entity_pos, *direction);
 
-        entity_t *explored_entity = cur_chunk->entities[new_pos.x][new_pos.y];
+        entity_t explored_entity = cur_chunk->entities[new_pos.x][new_pos.y];
 
-        if (explored_entity && explored_entity->entity_type == PC &&
-            !cur_entity.defeated) {
+        if (explored_entity.entity_type == PC && !cur_entity.defeated) {
                 start_pokemon_battle(cur_chunk, entity_pos);
         }
 
         if (get_land_cost_other(cur_chunk->terrain[new_pos.x][new_pos.y]) ==
                 -1 ||
-            explored_entity) {
+            explored_entity.entity_type != NO_ENTITY) {
                 *direction = opposite_direction(*direction);
                 new_pos = entity_pos;
         }
@@ -1518,14 +1517,13 @@ void find_wanderer_next_tile(entity_t cur_entity, cord_t entity_pos,
         land_t new_land = cur_chunk->terrain[new_pos.x][new_pos.y];
         land_t cur_land = cur_chunk->terrain[entity_pos.x][entity_pos.y];
 
-        entity_t *explored_entity = cur_chunk->entities[new_pos.x][new_pos.y];
+        entity_t explored_entity = cur_chunk->entities[new_pos.x][new_pos.y];
 
-        if (explored_entity && explored_entity->entity_type == PC &&
-            !cur_entity.defeated) {
+        if (explored_entity.entity_type == PC && !cur_entity.defeated) {
                 start_pokemon_battle(cur_chunk, entity_pos);
         }
 
-        if (new_land != cur_land || explored_entity) {
+        if (new_land != cur_land || explored_entity.entity_type != NO_ENTITY) {
                 *dir = static_cast<dir_t>(rand() % NUM_DIRECTIONS);
                 new_pos = entity_pos;
         }
@@ -1541,16 +1539,15 @@ void find_explorer_next_tile(entity_t cur_entity, cord_t entity_pos,
         dir_t *dir = (dir_t *)cur_entity.data;
         cord_t new_pos = find_tile_in_direction(entity_pos, *dir);
 
-        entity_t *explored_entity = cur_chunk->entities[new_pos.x][new_pos.y];
+        entity_t explored_entity = cur_chunk->entities[new_pos.x][new_pos.y];
 
-        if (explored_entity && explored_entity->entity_type == PC &&
-            !cur_entity.defeated) {
+        if (explored_entity.entity_type == PC && !cur_entity.defeated) {
                 start_pokemon_battle(cur_chunk, entity_pos);
         }
 
         if (get_land_cost_other(cur_chunk->terrain[new_pos.x][new_pos.y]) ==
                 -1 ||
-            explored_entity) {
+            explored_entity.entity_type != NO_ENTITY) {
                 *dir = static_cast<dir_t>(rand() % NUM_DIRECTIONS);
                 new_pos = entity_pos;
         }
@@ -1568,9 +1565,12 @@ int handle_pc_movements(cord_t *next_cord, cord_t entity_pos,
                         csv_data &csv) {
         land_t next_land = cur_chunk->terrain[next_cord->x][next_cord->y];
         *cost_to_move = get_land_cost_pc(next_land);
-        entity_t *entity = cur_chunk->entities[next_cord->x][next_cord->y];
+        entity_t *entity = &cur_chunk->entities[next_cord->x][next_cord->y];
+        entity_type_t entity_type = entity->entity_type;
 
-        if (entity) {
+        if (entity_type == RIVAL || entity_type == HIKER ||
+            entity_type == EXPLORER || entity_type == PACER ||
+            entity_type == SENTRY || entity_type == WANDERER) {
                 if (entity->defeated) {
                         *valid_command = 0;
                         *message = "This trainer has been defeated";
@@ -1761,7 +1761,7 @@ int do_tick(chunk_t *world[WORLD_SIZE][WORLD_SIZE], cord_t *cur_chunk_cord,
 
         event_t event = *(event_t *)heap_data->data;
         cord_t entity_pos = event.pos;
-        entity_t *entity = cur_chunk->entities[entity_pos.x][entity_pos.y];
+        entity_t *entity = &cur_chunk->entities[entity_pos.x][entity_pos.y];
 
         int cost_to_move = INT_MAX;
         cord_t next_cord;
@@ -1934,9 +1934,10 @@ int do_tick(chunk_t *world[WORLD_SIZE][WORLD_SIZE], cord_t *cur_chunk_cord,
 
         // TODO Switch to using pointers for entities
 
-        entity_t *temp = entity;
+        entity_t temp = *entity;
 
-        cur_chunk->entities[entity_pos.x][entity_pos.y] = NULL;
+        cur_chunk->entities[entity_pos.x][entity_pos.y] =
+            (entity_t){NO_ENTITY, NO_ENTITY, 0, NULL};
 
         // Note: only entity that can enter gates is pc.
         // Thus is entity is in gate, switch chunk
@@ -2019,7 +2020,9 @@ int do_tick(chunk_t *world[WORLD_SIZE][WORLD_SIZE], cord_t *cur_chunk_cord,
                     --world[cur_chunk_cord->x][cur_chunk_cord->y]->tick);
                 world[cur_chunk_cord->x][cur_chunk_cord->y]->pc_pos = pc_pos;
         } else {
-                cur_chunk->entities[next_cord.x][next_cord.y] = temp;
+                cur_chunk->entities[next_cord.x][next_cord.y] =
+                    (entity_t){temp.entity_type, temp.movement_type,
+                               temp.defeated, temp.data};
 
                 event_t *new_event = (event_t *)malloc(sizeof(event_t));
                 new_event->pos = next_cord;
