@@ -1105,12 +1105,13 @@ int rand_level_given_dist(chunk_t *chunk) {
 }
 
 void add_random_pokemon_to_trainers(chunk_t *chunk, csv_data csv, cord_t cord) {
+        int count = 0;
         do {
                 pokemon poke;
                 init_rand_pokemon_at_level(poke, rand_level_given_dist(chunk),
                                            csv);
                 chunk->entities[cord.x][cord.y].pokes->push_back(poke);
-        } while (rand() % 10 < 6);
+        } while (rand() % 10 < 6 && count++ < 5);
 }
 
 int spawn_trainers(chunk_t *chunk, int num_trainers, csv_data &csv) {
@@ -1392,7 +1393,8 @@ int start_pokemon_battle(chunk_t *cur_chunk, cord_t trainer_cord) {
 
                 refresh();
 
-                getch();
+                while (getch() != KEY_ESC)
+                        ;
         }
         // entity_t *trainer = &cur_chunk->entities[next_cord->x][next_cord->y];
 
@@ -1654,7 +1656,8 @@ int handle_pc_movements(cord_t *next_cord, cord_t entity_pos,
 
                         refresh();
 
-                        getch();
+                        while (getch() != KEY_ESC)
+                                ;
 
                         return 0;
                 }
@@ -2146,6 +2149,29 @@ int main(int argc, char *argv[]) {
         init_rand_pokemon_at_level(poke2, 1, data);
         pokemon poke3;
         init_rand_pokemon_at_level(poke3, 1, data);
+        pokemon options[3] = {poke1, poke2, poke3};
+
+        erase();
+        printw("Choose your starting pokemon (1-3):\n");
+        printw("1) %s\n", poke1.identifier.c_str());
+        printw("2) %s\n", poke2.identifier.c_str());
+        printw("3) %s\n", poke3.identifier.c_str());
+        printw("Enter 1, 2, or 3 below:\n");
+        refresh();
+
+        echo();
+        curs_set(1);
+
+        int option = -1;
+        while (option < 0 || 3 < option) {
+                scanw("%d", &option);
+        }
+        noecho();
+        curs_set(0);
+
+        world[cur_chunk_pos.x][cur_chunk_pos.y]
+            ->entities[pc_pos.x][pc_pos.y]
+            .pokes->push_back(options[option - 1]);
 
         int quit_game = 0;
         while (!quit_game) {
