@@ -1105,8 +1105,6 @@ void init_rand_pokemon_at_level(pokemon &poke, int level, csv_data &d) {
                         poke.types.insert(it->type_id);
                 }
         }
-
-        printw("hey");
 }
 
 int rand_level_given_dist(chunk_t *chunk) {
@@ -2184,22 +2182,16 @@ int main(int argc, char *argv[]) {
         printw("1) %s\n", poke1.identifier.c_str());
         printw("2) %s\n", poke2.identifier.c_str());
         printw("3) %s\n", poke3.identifier.c_str());
-        printw("Enter 1, 2, or 3 below:\n");
         refresh();
 
-        echo();
-        curs_set(1);
-
         int option = -1;
-        while (option < 0 || 3 < option) {
-                scanw("%d", &option);
+        while (!(option == '1' || option == '2' || option == '3')) {
+                option = getch();
         }
-        noecho();
-        curs_set(0);
 
         world[cur_chunk_pos.x][cur_chunk_pos.y]
             ->entities[pc_pos.x][pc_pos.y]
-            .pokes->push_back(options[option - 1]);
+            .pokes->push_back(options[option - '1']);
 
         int quit_game = 0;
         while (!quit_game) {
