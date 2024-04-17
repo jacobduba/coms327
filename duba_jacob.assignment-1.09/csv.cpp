@@ -395,7 +395,7 @@ std::istream &operator>>(std::istream &i, pokemon_types_data &m) {
         m.pokemon_id = stoi_emax(pokemon_id);
         getline(i, type_id, ',');
         m.type_id = stoi_emax(type_id);
-        getline(i, slot, ',');
+        getline(i, slot);
         m.slot = stoi_emax(slot);
 
         return i;

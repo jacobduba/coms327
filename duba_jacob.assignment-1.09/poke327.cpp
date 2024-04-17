@@ -11,6 +11,7 @@
 #include <iterator>
 #include <set>
 #include <unordered_map>
+#include <unordered_set>
 
 // Length and height for the world
 #define WORLD_SIZE 401
@@ -108,6 +109,7 @@ struct pokemon {
         int evasion_iv;
         int evasion;
         std::vector<move_data> moves;
+        std::unordered_set<int> types;
         int level;
         gender poke_gender;
         int shiney;
@@ -1096,6 +1098,15 @@ void init_rand_pokemon_at_level(pokemon &poke, int level, csv_data &d) {
                 random_move = moves_for_pokemon[random_index_2];
                 poke.moves.push_back(d.move_list[random_move.move_id - 1]);
         }
+
+        auto types_list = d.pokemon_types_list;
+        for (auto it = types_list.begin(); it != types_list.end(); it++) {
+                if (poke.id == it->pokemon_id) {
+                        poke.types.insert(it->type_id);
+                }
+        }
+
+        printw("hey");
 }
 
 int rand_level_given_dist(chunk_t *chunk) {
@@ -1399,6 +1410,11 @@ int start_pokemon_battle(chunk_t *cur_chunk, cord_t trainer_cord) {
                         printw("Pokemon is shiney!!!\n");
                 } else {
                         printw("Pokemon is not shiney.\n");
+                }
+                printw("Types: ");
+                for (auto it = poke.types.begin(); it != poke.types.end();
+                     it++) {
+                        printw("%d ", *it);
                 }
 
                 refresh();
