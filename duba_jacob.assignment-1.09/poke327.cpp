@@ -278,6 +278,8 @@ int get_land_cost_pc(land_t type) {
                 return 10;
                 // case GATE: // Don't allow to traverse GATE
                 //         return -1;
+        default:
+                return -1;
         }
 }
 
@@ -305,6 +307,8 @@ int get_land_cost_hiker(land_t type) {
                 return -1;
         case GATE:
                 return -1;
+        default:
+                return -1;
         }
 }
 
@@ -331,6 +335,8 @@ int get_land_cost_rival(land_t type) {
         case WATER:
                 return -1;
         case GATE:
+                return -1;
+        default:
                 return -1;
         }
 }
@@ -385,6 +391,8 @@ int get_land_cost_other(land_t type) {
         case WATER:
                 return -1;
         case GATE:
+                return -1;
+        default:
                 return -1;
         }
 }
@@ -925,6 +933,8 @@ int get_gate_coordinates(chunk_t *world[WORLD_SIZE][WORLD_SIZE], cord_t chunk,
                 return world[chunk.x][chunk.y]->w_gate_y;
         case EAST_GATE:
                 return world[chunk.x][chunk.y]->e_gate_y;
+        default:
+                return -1;
         }
 }
 
@@ -1493,7 +1503,8 @@ cord_t find_tile_in_direction(cord_t cur, dir_t dir) {
                 return (cord_t){cur.x - 1, cur.y + 1};
         case SOUTH:
                 return (cord_t){cur.x, cur.y + 1};
-        case SOUTH_WEST:
+        // SOUTH_WEST
+        default:
                 return (cord_t){cur.x + 1, cur.y + 1};
         }
 }
@@ -1514,7 +1525,8 @@ dir_t opposite_direction(dir_t dir) {
                 return NORTH_WEST;
         case SOUTH:
                 return NORTH;
-        case SOUTH_WEST:
+        // SOUTHWEST
+        default:
                 return NORTH_EAST;
         }
 }
