@@ -1375,50 +1375,35 @@ int render_game(chunk_t *cur_chunk, char const *status) {
         return 0;
 }
 
-int start_pokemon_battle(chunk_t *cur_chunk, cord_t trainer_cord) {
+int ind_next_alive_pokemon(std::vector<pokemon> *pokes) {
+        for (int i = 0; i < pokes->size(); i++) {
+                if (pokes->at(i).hp != 0) {
+                        return i;
+                }
+        }
 
+        return -1;
+}
+
+int pokemon_battle(chunk_t *cur_chunk, cord_t trainer_cord) {
         entity_t *trainer =
             &cur_chunk->entities[trainer_cord.x][trainer_cord.y];
 
-        for (int i = 0; i < trainer->pokes->size(); i++) {
-                pokemon poke = trainer->pokes->at(i);
+        int i;
+        while ((i = ind_next_alive_pokemon(trainer->pokes)) != -1) {
+                pokemon *poke = &trainer->pokes->at(i);
 
                 erase();
                 printw("Trainer sent out %s! (%d/%zu)\n",
-                       poke.identifier.c_str(), i + 1, trainer->pokes->size());
-                printw("Level: %d\n", poke.level);
-                printw("HP: %d\n", poke.hp);
-                printw("Attack: %d\n", poke.attack);
-                printw("Defense: %d\n", poke.defense);
-                printw("Special Attack: %d\n", poke.special_attack);
-                printw("Special Defense: %d\n", poke.special_defense);
-                printw("Speed: %d\n", poke.speed);
-                printw("Accuracy: %d\n", poke.accuracy);
-                printw("Evasion: %d\n", poke.evasion);
-                printw("Moves:\n");
-                for (int i = 0; i < poke.moves.size(); i++) {
-                        printw("- %s\n", poke.moves[i].identifier.c_str());
-                }
-                if (poke.poke_gender == gender::MALE) {
-                        printw("Gender: Male\n");
-                } else {
-                        printw("Gender: Female\n");
-                }
-                if (poke.shiney) {
-                        printw("Pokemon is shiney!!!\n");
-                } else {
-                        printw("Pokemon is not shiney.\n");
-                }
-                printw("Types: ");
-                for (auto it = poke.types.begin(); it != poke.types.end();
-                     it++) {
-                        printw("%d ", *it);
-                }
-
+                       poke->identifier.c_str(), i + 1, trainer->pokes->size());
+                printw("Level: %d\n", poke->level);
+                printw("HP: %d\n", poke->hp);
                 refresh();
 
                 while (getch() != KEY_ESC)
                         ;
+
+                poke->hp = std::max(poke->hp - 5, 0);
         }
         // entity_t *trainer = &cur_chunk->entities[next_cord->x][next_cord->y];
 
@@ -1450,7 +1435,7 @@ void explore_tile_lowest_distance(chunk_t *cur_chunk,
         entity_t *cur_entity = &cur_chunk->entities[entity_pos.x][entity_pos.y];
 
         if (explored_entity->entity_type == PC && !cur_entity->defeated) {
-                start_pokemon_battle(cur_chunk, entity_pos);
+                pokemon_battle(cur_chunk, entity_pos);
                 *best_next_cord = entity_pos;
                 *best_next_cord_dist = 0;
                 return;
@@ -1555,7 +1540,7 @@ void find_pacer_next_tile(entity_t cur_entity, cord_t entity_pos,
         entity_t explored_entity = cur_chunk->entities[new_pos.x][new_pos.y];
 
         if (explored_entity.entity_type == PC && !cur_entity.defeated) {
-                start_pokemon_battle(cur_chunk, entity_pos);
+                pokemon_battle(cur_chunk, entity_pos);
         }
 
         if (get_land_cost_other(cur_chunk->terrain[new_pos.x][new_pos.y]) ==
@@ -1582,7 +1567,7 @@ void find_wanderer_next_tile(entity_t cur_entity, cord_t entity_pos,
         entity_t explored_entity = cur_chunk->entities[new_pos.x][new_pos.y];
 
         if (explored_entity.entity_type == PC && !cur_entity.defeated) {
-                start_pokemon_battle(cur_chunk, entity_pos);
+                pokemon_battle(cur_chunk, entity_pos);
         }
 
         if (new_land != cur_land || explored_entity.entity_type != NO_ENTITY) {
@@ -1604,7 +1589,7 @@ void find_explorer_next_tile(entity_t cur_entity, cord_t entity_pos,
         entity_t explored_entity = cur_chunk->entities[new_pos.x][new_pos.y];
 
         if (explored_entity.entity_type == PC && !cur_entity.defeated) {
-                start_pokemon_battle(cur_chunk, entity_pos);
+                pokemon_battle(cur_chunk, entity_pos);
         }
 
         if (get_land_cost_other(cur_chunk->terrain[new_pos.x][new_pos.y]) ==
@@ -1639,7 +1624,7 @@ int handle_pc_movements(cord_t *next_cord, cord_t entity_pos,
                         return 0;
                 }
 
-                start_pokemon_battle(cur_chunk, *next_cord);
+                pokemon_battle(cur_chunk, *next_cord);
 
                 *next_cord = entity_pos;
                 *valid_command = 1;
