@@ -11,4 +11,4 @@ poke327: $(OBJS)
 	@$(CC) $(CFLAGS) -MMD -MF $*.d -c $<
 
 clean:
-	rm poke327.out
+	rm $(OBJS) poke327.out
