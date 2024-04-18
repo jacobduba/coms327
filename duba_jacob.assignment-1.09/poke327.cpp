@@ -2039,18 +2039,35 @@ int handle_pc_movements(cord_t *next_cord, cord_t entity_pos,
     return 0;
 }
 
-int display_shop(char const *shop) {
+int display_pokemart(char const *shop, inventory_t *inventory) {
     erase();
 
-    for (int i = 0; i < CHUNK_X_WIDTH; i++) {
-        printw("=");
+    printw("Pokemart:\n");
+    printw("Refilled inventory.");
+    inventory->pokeballs = 5;
+    inventory->potions = 5;
+    inventory->revives = 5;
+
+    refresh();
+
+    int command = 0;
+    while (command != '<') {
+        command = getch();
     }
-    printw("\n%s\n", shop);
-    for (int i = 0; i < CHUNK_X_WIDTH; i++) {
-        printw("=");
+
+    return 0;
+}
+
+int display_pokemon_center(char const *shop, entity_t *player) {
+    erase();
+
+    printw("Pokemon Center:\n");
+    printw("Healed all pokemon.");
+
+    for (int i = 0; i < player->pokes->size(); i++) {
+        pokemon *poke = &player->pokes->at(i);
+        poke->hp = poke->hp_max;
     }
-    printw("\n\n");
-    printw("This is this a placeholder screen.");
 
     refresh();
 
@@ -2234,9 +2251,9 @@ int do_tick(chunk_t *world[WORLD_SIZE][WORLD_SIZE], cord_t *cur_chunk_cord,
             case '>':
                 land_pc_is_on = cur_chunk->terrain[entity_pos.x][entity_pos.y];
                 if (land_pc_is_on == POKEMART) {
-                    display_shop("Pokemart");
+                    display_pokemart("Pokemart", inventory);
                 } else if (land_pc_is_on == POKEMON_CENTER) {
-                    display_shop("Pokemon Center");
+                    display_pokemon_center("Pokemon Center", entity);
                 } else {
                     message = "No building "
                               "to enter";
