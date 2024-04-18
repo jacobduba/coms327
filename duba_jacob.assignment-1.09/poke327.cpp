@@ -1385,27 +1385,121 @@ int ind_next_alive_pokemon(std::vector<pokemon> *pokes) {
         return -1;
 }
 
-int pokemon_battle(chunk_t *cur_chunk, cord_t trainer_cord) {
-        entity_t *trainer =
-            &cur_chunk->entities[trainer_cord.x][trainer_cord.y];
+int pokemon_battle_turn(pokemon *e_poke, pokemon *p_poke,
+                        bool trainer_encounter) {
+        erase();
+        printw("Enemy Pokemon: %s\n", e_poke->identifier.c_str());
+        printw("Level: %d\n", e_poke->level);
+        printw("HP: %d\n\n", e_poke->hp);
+        printw("My Pokemon: %s\n", p_poke->identifier.c_str());
+        printw("Level: %d\n", p_poke->level);
+        printw("HP: %d\n\n", p_poke->hp);
 
-        int i;
-        while ((i = ind_next_alive_pokemon(trainer->pokes)) != -1) {
-                pokemon *poke = &trainer->pokes->at(i);
+        printw("Choose an option:\n");
+        printw("1) Fight 2) Bag 3) Run 4) Pokemon");
 
-                erase();
-                printw("Trainer sent out %s! (%d/%zu)\n",
-                       poke->identifier.c_str(), i + 1, trainer->pokes->size());
-                printw("Level: %d\n", poke->level);
-                printw("HP: %d\n", poke->hp);
+        refresh();
+
+        enum turn_state { FIGHT = '1', BAG = '2', RUN = '3', POKEMON = '4' };
+
+        int p_turn_state = -1;
+        move_data p_move;
+        int e_turn_state = -1;
+        move_data e_move;
+
+        while (p_turn_state < '1' || '4' < p_turn_state) {
+                p_turn_state = getch();
+        }
+
+        // AI for trainer
+        e_turn_state = turn_state::FIGHT;
+
+        switch (p_turn_state) {
+        case turn_state::FIGHT:
+                clear();
+                printw("Select move:\n");
+                for (int i = 0; i < p_poke->moves.size(); i++) {
+                        move_data move = p_poke->moves[i];
+                        printw(" %d) %s\n", i + 1, move.identifier.c_str());
+                }
                 refresh();
 
-                while (getch() != KEY_ESC)
-                        ;
-
-                poke->hp = std::max(poke->hp - 5, 0);
+                int opt = -1;
+                while (opt < 0 || e_poke->moves.size() - 1 < opt) {
+                        opt = getch() - '1';
+                }
+                p_move = p_poke->moves.at(0);
+                break;
         }
-        // entity_t *trainer = &cur_chunk->entities[next_cord->x][next_cord->y];
+
+        switch (e_turn_state) {
+        case turn_state::FIGHT:
+                e_move = e_poke->moves.at(rand() % e_poke->moves.size());
+                break;
+        case turn_state::RUN:
+                // TODO
+                break;
+        default:
+                // Trainers should only fight
+                break;
+        }
+
+        enum first_state { PLAYER, ENEMY };
+        const int num_first_states = 2;
+        first_state first;
+
+        if (e_turn_state == turn_state::FIGHT &&
+            p_turn_state == turn_state::FIGHT) {
+                if (p_move.priority > e_move.priority) {
+                        first = first_state::PLAYER;
+                } else if (p_move.priority < e_move.priority) {
+                        first = first_state::ENEMY;
+                } else {
+                        if (p_poke->speed > e_poke->speed) {
+                                first = first_state::PLAYER;
+                        } else if (p_poke->speed < e_poke->speed) {
+                                first = first_state::ENEMY;
+                        } else {
+                                first = static_cast<first_state>(
+                                    rand() % num_first_states);
+                        }
+                }
+        }
+
+        e_poke->hp = std::max(e_poke->hp - 5, 0);
+
+        return 0;
+}
+
+int trainer_pokemon_battle(chunk_t *cur_chunk, cord_t trainer_cord) {
+        entity_t *trainer =
+            &cur_chunk->entities[trainer_cord.x][trainer_cord.y];
+        entity_t *player =
+            &cur_chunk->entities[cur_chunk->pc_pos.x][cur_chunk->pc_pos.y];
+
+        int tp_i = ind_next_alive_pokemon(trainer->pokes);
+        int pp_i = ind_next_alive_pokemon(player->pokes);
+        while (ind_next_alive_pokemon(trainer->pokes) != -1 &&
+               ind_next_alive_pokemon(player->pokes) != -1) {
+                pokemon *t_poke = &trainer->pokes->at(tp_i);
+                pokemon *p_poke = &player->pokes->at(pp_i);
+
+                // erase();
+                // printw("Trainer sent out %s! (%d/%zu)\n\n",
+                //        t_poke->identifier.c_str(), tp_i + 1,
+                //        trainer->pokes->size());
+                // printw("Go %s!\n", t_poke->identifier.c_str());
+                // refresh();
+
+                while (t_poke->hp != 0 && p_poke->hp != 0) {
+                        pokemon_battle_turn(t_poke, p_poke);
+                }
+
+                if (t_poke->hp == 0)
+                        tp_i = ind_next_alive_pokemon(trainer->pokes);
+                if (p_poke->hp == 0)
+                        pp_i = ind_next_alive_pokemon(trainer->pokes);
+        }
 
         if (trainer->entity_type == RIVAL || trainer->entity_type == HIKER) {
                 trainer->movement_type = EXPLORER;
@@ -1435,7 +1529,7 @@ void explore_tile_lowest_distance(chunk_t *cur_chunk,
         entity_t *cur_entity = &cur_chunk->entities[entity_pos.x][entity_pos.y];
 
         if (explored_entity->entity_type == PC && !cur_entity->defeated) {
-                pokemon_battle(cur_chunk, entity_pos);
+                trainer_pokemon_battle(cur_chunk, entity_pos);
                 *best_next_cord = entity_pos;
                 *best_next_cord_dist = 0;
                 return;
@@ -1540,7 +1634,7 @@ void find_pacer_next_tile(entity_t cur_entity, cord_t entity_pos,
         entity_t explored_entity = cur_chunk->entities[new_pos.x][new_pos.y];
 
         if (explored_entity.entity_type == PC && !cur_entity.defeated) {
-                pokemon_battle(cur_chunk, entity_pos);
+                trainer_pokemon_battle(cur_chunk, entity_pos);
         }
 
         if (get_land_cost_other(cur_chunk->terrain[new_pos.x][new_pos.y]) ==
@@ -1567,7 +1661,7 @@ void find_wanderer_next_tile(entity_t cur_entity, cord_t entity_pos,
         entity_t explored_entity = cur_chunk->entities[new_pos.x][new_pos.y];
 
         if (explored_entity.entity_type == PC && !cur_entity.defeated) {
-                pokemon_battle(cur_chunk, entity_pos);
+                trainer_pokemon_battle(cur_chunk, entity_pos);
         }
 
         if (new_land != cur_land || explored_entity.entity_type != NO_ENTITY) {
@@ -1589,7 +1683,7 @@ void find_explorer_next_tile(entity_t cur_entity, cord_t entity_pos,
         entity_t explored_entity = cur_chunk->entities[new_pos.x][new_pos.y];
 
         if (explored_entity.entity_type == PC && !cur_entity.defeated) {
-                pokemon_battle(cur_chunk, entity_pos);
+                trainer_pokemon_battle(cur_chunk, entity_pos);
         }
 
         if (get_land_cost_other(cur_chunk->terrain[new_pos.x][new_pos.y]) ==
@@ -1624,7 +1718,7 @@ int handle_pc_movements(cord_t *next_cord, cord_t entity_pos,
                         return 0;
                 }
 
-                pokemon_battle(cur_chunk, *next_cord);
+                trainer_pokemon_battle(cur_chunk, *next_cord);
 
                 *next_cord = entity_pos;
                 *valid_command = 1;
