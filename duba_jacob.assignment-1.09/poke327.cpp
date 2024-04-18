@@ -932,12 +932,12 @@ int get_gate_coordinates(chunk_t *world[WORLD_SIZE][WORLD_SIZE], cord_t chunk,
 }
 
 void spawn_entity(chunk_t *chunk, entity_type_t entity_type, cord_t cord,
-                  int tick) {
+                  int tick, std::vector<pokemon> *pokes) {
     entity_t entity;
     entity.entity_type = entity_type;
     entity.movement_type = entity_type;
     entity.defeated = 0;
-    entity.pokes = new std::vector<pokemon>();
+    entity.pokes = pokes;
 
     if (entity_type == WANDERER || entity_type == PACER ||
         entity_type == EXPLORER) {
@@ -960,7 +960,8 @@ void spawn_entity(chunk_t *chunk, entity_type_t entity_type, cord_t cord,
  * Returns position entity was spawned at.
  */
 cord_t spawn_entity_randomly(chunk_t *chunk, entity_type_t entity_type,
-                             int (*get_land_cost)(land_t), int tick) {
+                             int (*get_land_cost)(land_t), int tick,
+                             std::vector<pokemon> *pokes) {
     cord_t cord;
     do {
         cord.x = rand() % (CHUNK_X_WIDTH - 2) + 1;
@@ -968,7 +969,7 @@ cord_t spawn_entity_randomly(chunk_t *chunk, entity_type_t entity_type,
     } while (chunk->entities[cord.x][cord.y].entity_type != NO_ENTITY ||
              get_land_cost(chunk->terrain[cord.x][cord.y]) == -1);
 
-    spawn_entity(chunk, entity_type, cord, tick);
+    spawn_entity(chunk, entity_type, cord, tick, pokes);
 
     return cord;
 }
@@ -1138,14 +1139,14 @@ int spawn_trainers(chunk_t *chunk, int num_trainers, csv_data &csv) {
         return 0;
 
     cord = spawn_entity_randomly(chunk, HIKER, get_land_cost_hiker,
-                                 entity_count++);
+                                 entity_count++, new std::vector<pokemon>());
     add_random_pokemon_to_trainers(chunk, csv, cord);
 
     if (num_trainers < 2)
         return 0;
 
     cord = spawn_entity_randomly(chunk, RIVAL, get_land_cost_rival,
-                                 entity_count++);
+                                 entity_count++, new std::vector<pokemon>());
     add_random_pokemon_to_trainers(chunk, csv, cord);
 
     int entity_type;
@@ -1155,37 +1156,43 @@ int spawn_trainers(chunk_t *chunk, int num_trainers, csv_data &csv) {
         // case 0:
         //         spawn_entity_randomly(chunk, HIKER,
         //         get_land_cost_hiker,
-        //                               entity_count++);
+        //                               entity_count++, new
+        //                               std::vector<pokemon>());
         //         break;
         // case 1:
         //         spawn_entity_randomly(chunk, RIVAL,
         //         get_land_cost_rival,
-        //                               entity_count++);
+        //                               entity_count++, new
+        //                               std::vector<pokemon>());
         //         break;
         case 2:
             cord = spawn_entity_randomly(chunk, PACER, get_land_cost_other,
-                                         entity_count++);
+                                         entity_count++,
+                                         new std::vector<pokemon>());
             add_random_pokemon_to_trainers(chunk, csv, cord);
             break;
         case 3:
-            cord = spawn_entity_randomly(
-                chunk, WANDERER, get_land_cost_wanderer, entity_count++);
+            cord = spawn_entity_randomly(chunk, WANDERER,
+                                         get_land_cost_wanderer, entity_count++,
+                                         new std::vector<pokemon>());
             add_random_pokemon_to_trainers(chunk, csv, cord);
             break;
         case 4:
             cord = spawn_entity_randomly(chunk, SENTRY, get_land_cost_other,
-                                         entity_count++);
+                                         entity_count++,
+                                         new std::vector<pokemon>());
             add_random_pokemon_to_trainers(chunk, csv, cord);
             break;
         case 5:
             cord = spawn_entity_randomly(chunk, EXPLORER, get_land_cost_other,
-                                         entity_count++);
+                                         entity_count++,
+                                         new std::vector<pokemon>());
             add_random_pokemon_to_trainers(chunk, csv, cord);
             break;
             // case 6:
             //         spawn_entity(chunk, SWIMMER,
             //         get_land_cost_swimmer,
-            //                      &entity_count);
+            //                      &entity_count, new std::vector<pokemon>());
             //         break;
         }
     }
@@ -2369,6 +2376,8 @@ int do_tick(chunk_t *world[WORLD_SIZE][WORLD_SIZE], cord_t *cur_chunk_cord,
 
     entity_t temp = *entity;
 
+    std::vector<pokemon> *tmp_pokes = entity->pokes;
+
     cur_chunk->entities[entity_pos.x][entity_pos.y] =
         (entity_t){NO_ENTITY, NO_ENTITY, 0, NULL, NULL};
 
@@ -2385,7 +2394,8 @@ int do_tick(chunk_t *world[WORLD_SIZE][WORLD_SIZE], cord_t *cur_chunk_cord,
 
             spawn_entity(world[cur_chunk_cord->x][cur_chunk_cord->y], PC,
                          cord_on_new_chunk,
-                         --world[cur_chunk_cord->x][cur_chunk_cord->y]->tick);
+                         --world[cur_chunk_cord->x][cur_chunk_cord->y]->tick,
+                         tmp_pokes);
 
             world[cur_chunk_cord->x][cur_chunk_cord->y]->pc_pos =
                 cord_on_new_chunk;
@@ -2399,7 +2409,8 @@ int do_tick(chunk_t *world[WORLD_SIZE][WORLD_SIZE], cord_t *cur_chunk_cord,
 
             spawn_entity(world[cur_chunk_cord->x][cur_chunk_cord->y], PC,
                          cord_on_new_chunk,
-                         --world[cur_chunk_cord->x][cur_chunk_cord->y]->tick);
+                         --world[cur_chunk_cord->x][cur_chunk_cord->y]->tick,
+                         tmp_pokes);
 
             world[cur_chunk_cord->x][cur_chunk_cord->y]->pc_pos =
                 cord_on_new_chunk;
@@ -2413,7 +2424,8 @@ int do_tick(chunk_t *world[WORLD_SIZE][WORLD_SIZE], cord_t *cur_chunk_cord,
 
             spawn_entity(world[cur_chunk_cord->x][cur_chunk_cord->y], PC,
                          cord_on_new_chunk,
-                         --world[cur_chunk_cord->x][cur_chunk_cord->y]->tick);
+                         --world[cur_chunk_cord->x][cur_chunk_cord->y]->tick,
+                         tmp_pokes);
 
             world[cur_chunk_cord->x][cur_chunk_cord->y]->pc_pos =
                 cord_on_new_chunk;
@@ -2427,7 +2439,8 @@ int do_tick(chunk_t *world[WORLD_SIZE][WORLD_SIZE], cord_t *cur_chunk_cord,
 
             spawn_entity(world[cur_chunk_cord->x][cur_chunk_cord->y], PC,
                          cord_on_new_chunk,
-                         --world[cur_chunk_cord->x][cur_chunk_cord->y]->tick);
+                         --world[cur_chunk_cord->x][cur_chunk_cord->y]->tick,
+                         tmp_pokes);
 
             world[cur_chunk_cord->x][cur_chunk_cord->y]->pc_pos =
                 cord_on_new_chunk;
@@ -2438,7 +2451,7 @@ int do_tick(chunk_t *world[WORLD_SIZE][WORLD_SIZE], cord_t *cur_chunk_cord,
         cord_t pc_pos = spawn_entity_randomly(
             world[cur_chunk_cord->x][cur_chunk_cord->y], PC,
             return_negative_one_if_not_road,
-            --world[cur_chunk_cord->x][cur_chunk_cord->y]->tick);
+            --world[cur_chunk_cord->x][cur_chunk_cord->y]->tick, tmp_pokes);
         world[cur_chunk_cord->x][cur_chunk_cord->y]->pc_pos = pc_pos;
     } else {
         cur_chunk->entities[next_cord.x][next_cord.y] =
@@ -2530,7 +2543,8 @@ int main(int argc, char *argv[]) {
     cord_t pc_pos =
         spawn_entity_randomly(world[cur_chunk_pos.x][cur_chunk_pos.y], PC,
                               return_negative_one_if_not_road,
-                              --world[cur_chunk_pos.x][cur_chunk_pos.y]->tick);
+                              --world[cur_chunk_pos.x][cur_chunk_pos.y]->tick,
+                              new std::vector<pokemon>());
     world[cur_chunk_pos.x][cur_chunk_pos.y]->pc_pos = pc_pos;
 
     const int num_entities = num_trainers + 1;
