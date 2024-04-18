@@ -1385,6 +1385,35 @@ int ind_next_alive_pokemon(std::vector<pokemon> *pokes) {
         return -1;
 }
 
+int calculate_damage(pokemon *a_poke, pokemon *d_poke, move_data a_move) {
+        int crit_chance = a_poke->speed_base / 2;
+        bool is_crit = rand() % 255 < crit_chance;
+        float crit_mult = 1.0;
+        if (is_crit) {
+                crit_mult = 1.5;
+        }
+
+        int random = rand() % (100 - 85) + 85;
+
+        float stab_mult = 1.0;
+        if (d_poke->types.count(a_move.type_id)) {
+                stab_mult = 1.5;
+        }
+
+        int power = a_move.power;
+        if (power == INT_MAX) {
+                power = 0;
+        }
+
+        int damage = ((((2 * a_poke->level) / 5.0 + 2) * power *
+                       a_poke->attack / d_poke->defense) /
+                          50.0 +
+                      2) *
+                     crit_mult * random / 100.0 * stab_mult;
+
+        return damage;
+}
+
 int pokemon_battle_turn(pokemon *e_poke, pokemon *p_poke,
                         bool trainer_encounter) {
         erase();
@@ -1466,8 +1495,42 @@ int pokemon_battle_turn(pokemon *e_poke, pokemon *p_poke,
                 }
         }
 
-        e_poke->hp = std::max(e_poke->hp - 5, 0);
+        if (first == first_state::PLAYER) {
+                int p_attack = calculate_damage(p_poke, e_poke, p_move);
+                printw("Your pokemon attacks for %d!\n", p_attack);
+                e_poke->hp = std::max(e_poke->hp - p_attack, 0);
 
+                if (e_poke->hp != 0) {
+                        int e_attack = calculate_damage(e_poke, p_poke, e_move);
+                        printw("Enemy pokemon attacks for %d!\n", e_attack);
+                        p_poke->hp = std::max(p_poke->hp - e_attack, 0);
+
+                        if (p_poke->hp == 0) {
+                                printw("Your pokemon fainted.\n");
+                        }
+                } else {
+                        printw("Enemy pokemon fainted.\n");
+                }
+        } else {
+                int e_attack = calculate_damage(e_poke, p_poke, e_move);
+                printw("Enemy pokemon attacks for %d!\n", e_attack);
+                p_poke->hp = std::max(e_poke->hp - e_attack, 0);
+
+                if (p_poke->hp != 0) {
+                        int p_attack = calculate_damage(p_poke, e_poke, p_move);
+                        printw("Your pokemon attacks for %d!\n", p_attack);
+                        e_poke->hp = std::max(e_poke->hp - p_attack, 0);
+
+                        if (e_poke->hp == 0) {
+                                printw("Enemy pokemon fainted.\n");
+                        }
+                } else {
+                        printw("Your pokemon fainted.\n");
+                }
+        }
+
+        refresh();
+        getch();
         return 0;
 }
 
@@ -1492,7 +1555,7 @@ int trainer_pokemon_battle(chunk_t *cur_chunk, cord_t trainer_cord) {
                 // refresh();
 
                 while (t_poke->hp != 0 && p_poke->hp != 0) {
-                        pokemon_battle_turn(t_poke, p_poke);
+                        pokemon_battle_turn(t_poke, p_poke, true);
                 }
 
                 if (t_poke->hp == 0)
