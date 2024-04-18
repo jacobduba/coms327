@@ -1414,8 +1414,24 @@ int calculate_damage(pokemon *a_poke, pokemon *d_poke, move_data a_move) {
         return damage;
 }
 
-int pokemon_battle_turn(pokemon *e_poke, pokemon *p_poke,
-                        bool trainer_encounter) {
+int select_poke_screen(entity_t *player) {
+        clear();
+        printw("Select pokemon for battle:\n");
+        for (int i = 0; i < player->pokes->size(); i++) {
+                printw(" %d) %s\n", i + 1,
+                       player->pokes->at(i).identifier.c_str());
+        }
+        refresh();
+
+        int select_poke = -1;
+        while (select_poke < 0 || player->pokes->size() < select_poke) {
+                select_poke = getch() - '1';
+        }
+        return select_poke;
+}
+
+int pokemon_battle_turn(pokemon *e_poke, pokemon *p_poke, entity_t *player,
+                        int &pp_i, bool trainer_encounter, bool &flee) {
         erase();
         printw("Enemy Pokemon: %s\n", e_poke->identifier.c_str());
         printw("Level: %d\n", e_poke->level);
@@ -1429,22 +1445,23 @@ int pokemon_battle_turn(pokemon *e_poke, pokemon *p_poke,
 
         refresh();
 
-        enum turn_state { FIGHT = '1', BAG = '2', RUN = '3', POKEMON = '4' };
+        enum choice_state { FIGHT = '1', BAG = '2', RUN = '3', POKEMON = '4' };
 
-        int p_turn_state = -1;
+        int p_choice = -1;
         move_data p_move;
-        int e_turn_state = -1;
+        int e_choice = -1;
         move_data e_move;
 
-        while (p_turn_state < '1' || '4' < p_turn_state) {
-                p_turn_state = getch();
+        while (p_choice < '1' || '4' < p_choice) {
+                p_choice = getch();
         }
 
         // AI for trainer
-        e_turn_state = turn_state::FIGHT;
+        e_choice = choice_state::FIGHT;
 
-        switch (p_turn_state) {
-        case turn_state::FIGHT:
+        int opt;
+        switch (p_choice) {
+        case choice_state::FIGHT:
                 clear();
                 printw("Select move:\n");
                 for (int i = 0; i < p_poke->moves.size(); i++) {
@@ -1453,19 +1470,25 @@ int pokemon_battle_turn(pokemon *e_poke, pokemon *p_poke,
                 }
                 refresh();
 
-                int opt = -1;
+                opt = -1;
                 while (opt < 0 || e_poke->moves.size() - 1 < opt) {
                         opt = getch() - '1';
                 }
                 p_move = p_poke->moves.at(0);
                 break;
+        case choice_state::POKEMON:
+                pp_i = select_poke_screen(player);
+                p_poke = &player->pokes->at(pp_i);
+                break;
+        default:
+                break;
         }
 
-        switch (e_turn_state) {
-        case turn_state::FIGHT:
+        switch (e_choice) {
+        case choice_state::FIGHT:
                 e_move = e_poke->moves.at(rand() % e_poke->moves.size());
                 break;
-        case turn_state::RUN:
+        case choice_state::RUN:
                 // TODO
                 break;
         default:
@@ -1473,29 +1496,75 @@ int pokemon_battle_turn(pokemon *e_poke, pokemon *p_poke,
                 break;
         }
 
-        enum first_state { PLAYER, ENEMY };
+        enum battle_state {
+                PLAYER_FIRST,
+                ENEMY_FIRST,
+                PLAYER_ONLY,
+                ENEMY_ONLY,
+                NO_ATTACKS
+        };
         const int num_first_states = 2;
-        first_state first;
+        battle_state battle;
 
-        if (e_turn_state == turn_state::FIGHT &&
-            p_turn_state == turn_state::FIGHT) {
+        if (e_choice == choice_state::FIGHT &&
+            p_choice == choice_state::FIGHT) {
                 if (p_move.priority > e_move.priority) {
-                        first = first_state::PLAYER;
+                        battle = battle_state::PLAYER_FIRST;
                 } else if (p_move.priority < e_move.priority) {
-                        first = first_state::ENEMY;
+                        battle = battle_state::ENEMY_FIRST;
                 } else {
                         if (p_poke->speed > e_poke->speed) {
-                                first = first_state::PLAYER;
+                                battle = battle_state::PLAYER_FIRST;
                         } else if (p_poke->speed < e_poke->speed) {
-                                first = first_state::ENEMY;
+                                battle = battle_state::ENEMY_FIRST;
                         } else {
-                                first = static_cast<first_state>(
+                                battle = static_cast<battle_state>(
                                     rand() % num_first_states);
                         }
                 }
+        } else if (p_choice == choice_state::FIGHT &&
+                   e_choice != choice_state::FIGHT) {
+                battle = battle_state::PLAYER_ONLY;
+        } else if (p_choice != choice_state::FIGHT &&
+                   e_choice == choice_state::FIGHT) {
+                battle = battle_state::ENEMY_ONLY;
+        } else {
+                battle = battle_state::NO_ATTACKS;
         }
 
-        if (first == first_state::PLAYER) {
+        clear();
+
+        if (p_choice == choice_state::POKEMON) {
+                printw("You swapped in %s!\n", p_poke->identifier.c_str());
+        }
+
+        if (p_choice == choice_state::RUN) {
+                int flee_successful = rand() % 2;
+                if (flee_successful) {
+                        printw("You successfully fleed!");
+                        refresh();
+                        flee = true;
+                        getch();
+                        return 0;
+                } else {
+                        printw("You failed to flee.\n");
+                }
+        }
+
+        if (e_choice == choice_state::RUN) {
+                int flee_successful = rand() % 2;
+                if (flee_successful) {
+                        printw("Enemy successfully fleed!");
+                        refresh();
+                        flee = true;
+                        getch();
+                        return 0;
+                } else {
+                        printw("Enemy failed to flee.\n");
+                }
+        }
+
+        if (battle == battle_state::PLAYER_FIRST) {
                 int p_attack = calculate_damage(p_poke, e_poke, p_move);
                 printw("Your pokemon attacks for %d!\n", p_attack);
                 e_poke->hp = std::max(e_poke->hp - p_attack, 0);
@@ -1511,7 +1580,7 @@ int pokemon_battle_turn(pokemon *e_poke, pokemon *p_poke,
                 } else {
                         printw("Enemy pokemon fainted.\n");
                 }
-        } else {
+        } else if (battle == battle_state::ENEMY_FIRST) {
                 int e_attack = calculate_damage(e_poke, p_poke, e_move);
                 printw("Enemy pokemon attacks for %d!\n", e_attack);
                 p_poke->hp = std::max(e_poke->hp - e_attack, 0);
@@ -1525,6 +1594,22 @@ int pokemon_battle_turn(pokemon *e_poke, pokemon *p_poke,
                                 printw("Enemy pokemon fainted.\n");
                         }
                 } else {
+                        printw("Your pokemon fainted.\n");
+                }
+        } else if (battle == battle_state::PLAYER_ONLY) {
+                int p_attack = calculate_damage(p_poke, e_poke, p_move);
+                printw("Your pokemon attacks for %d!\n", p_attack);
+                e_poke->hp = std::max(e_poke->hp - p_attack, 0);
+
+                if (e_poke->hp == 0) {
+                        printw("Enemy pokemon fainted.\n");
+                }
+        } else if (battle == battle_state::ENEMY_ONLY) {
+                int e_attack = calculate_damage(e_poke, p_poke, e_move);
+                printw("Enemy pokemon attacks for %d!\n", e_attack);
+                p_poke->hp = std::max(e_poke->hp - e_attack, 0);
+
+                if (p_poke->hp == 0) {
                         printw("Your pokemon fainted.\n");
                 }
         }
@@ -1541,21 +1626,18 @@ int trainer_pokemon_battle(chunk_t *cur_chunk, cord_t trainer_cord) {
             &cur_chunk->entities[cur_chunk->pc_pos.x][cur_chunk->pc_pos.y];
 
         int tp_i = ind_next_alive_pokemon(trainer->pokes);
-        int pp_i = ind_next_alive_pokemon(player->pokes);
+        int pp_i = select_poke_screen(player);
+
+        bool flee = false;
+
         while (ind_next_alive_pokemon(trainer->pokes) != -1 &&
-               ind_next_alive_pokemon(player->pokes) != -1) {
+               ind_next_alive_pokemon(player->pokes) != -1 && !flee) {
                 pokemon *t_poke = &trainer->pokes->at(tp_i);
                 pokemon *p_poke = &player->pokes->at(pp_i);
 
-                // erase();
-                // printw("Trainer sent out %s! (%d/%zu)\n\n",
-                //        t_poke->identifier.c_str(), tp_i + 1,
-                //        trainer->pokes->size());
-                // printw("Go %s!\n", t_poke->identifier.c_str());
-                // refresh();
-
-                while (t_poke->hp != 0 && p_poke->hp != 0) {
-                        pokemon_battle_turn(t_poke, p_poke, true);
+                while (t_poke->hp != 0 && p_poke->hp != 0 && !flee) {
+                        pokemon_battle_turn(t_poke, p_poke, player, pp_i, true,
+                                            flee);
                 }
 
                 if (t_poke->hp == 0)
