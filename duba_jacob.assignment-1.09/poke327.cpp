@@ -1441,7 +1441,11 @@ int pokemon_battle_turn(pokemon *e_poke, pokemon *p_poke, entity_t *player,
         printw("HP: %d\n\n", p_poke->hp);
 
         printw("Choose an option:\n");
-        printw("1) Fight 2) Bag 3) Run 4) Pokemon");
+        if (trainer_encounter) {
+                printw("1) Fight 2) Bag 4) Pokemon");
+        } else {
+                printw("1) Fight 2) Bag 3) Run 4) Pokemon");
+        }
 
         refresh();
 
@@ -1454,10 +1458,19 @@ int pokemon_battle_turn(pokemon *e_poke, pokemon *p_poke, entity_t *player,
 
         while (p_choice < '1' || '4' < p_choice) {
                 p_choice = getch();
+                if (trainer_encounter && p_choice == choice_state::RUN) {
+                        p_choice = -1;
+                }
         }
 
         // AI for trainer
         e_choice = choice_state::FIGHT;
+        if (!trainer_encounter) {
+                int r = rand() % 5;
+                if (r == 0) {
+                        e_choice = choice_state::RUN;
+                }
+        }
 
         int opt;
         switch (p_choice) {
@@ -1642,8 +1655,9 @@ int trainer_pokemon_battle(chunk_t *cur_chunk, cord_t trainer_cord) {
 
                 if (t_poke->hp == 0)
                         tp_i = ind_next_alive_pokemon(trainer->pokes);
-                if (p_poke->hp == 0)
-                        pp_i = ind_next_alive_pokemon(trainer->pokes);
+                if (p_poke->hp == 0 &&
+                    ind_next_alive_pokemon(player->pokes) != 0)
+                        pp_i = select_poke_screen(player);
         }
 
         if (trainer->entity_type == RIVAL || trainer->entity_type == HIKER) {
@@ -1654,6 +1668,38 @@ int trainer_pokemon_battle(chunk_t *cur_chunk, cord_t trainer_cord) {
         }
 
         trainer->defeated = 1;
+
+        return 0;
+}
+
+int wild_pokemon_battle(chunk_t *cur_chunk, csv_data csv, entity_t *player) {
+        if (ind_next_alive_pokemon(player->pokes) == -1)
+                return 0;
+
+        pokemon wild_poke;
+        init_rand_pokemon_at_level(wild_poke, rand_level_given_dist(cur_chunk),
+                                   csv);
+
+        int pp_i = select_poke_screen(player);
+
+        bool flee = false;
+
+        while (wild_poke.hp != 0 &&
+               ind_next_alive_pokemon(player->pokes) != -1 && !flee) {
+                pokemon *p_poke = &player->pokes->at(pp_i);
+
+                while (wild_poke.hp != 0 && p_poke->hp != 0 && !flee) {
+                        pokemon_battle_turn(&wild_poke, p_poke, player, pp_i,
+                                            false, flee);
+                }
+
+                if (p_poke->hp == 0 &&
+                    ind_next_alive_pokemon(player->pokes) != -1)
+                        pp_i = select_poke_screen(player);
+        }
+        refresh();
+
+        getch();
 
         return 0;
 }
@@ -1848,7 +1894,7 @@ int handle_pc_movements(cord_t *next_cord, cord_t entity_pos,
                         int *valid_command, char const **message,
                         int hiker_dist[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT],
                         int rival_dist[CHUNK_X_WIDTH][CHUNK_Y_HEIGHT],
-                        csv_data &csv) {
+                        csv_data &csv, entity_t *player) {
         land_t next_land = cur_chunk->terrain[next_cord->x][next_cord->y];
         *cost_to_move = get_land_cost_pc(next_land);
         entity_t *entity = &cur_chunk->entities[next_cord->x][next_cord->y];
@@ -1873,42 +1919,7 @@ int handle_pc_movements(cord_t *next_cord, cord_t entity_pos,
         if (next_land == TALL_GRASS) {
                 int pokemon_encounter = rand() % 10;
                 if (pokemon_encounter == 0) {
-                        pokemon poke;
-                        init_rand_pokemon_at_level(
-                            poke, rand_level_given_dist(cur_chunk), csv);
-
-                        erase();
-                        printw("A wild %s appears!\n", poke.identifier.c_str());
-                        printw("Level: %d\n", poke.level);
-                        printw("HP: %d\n", poke.hp);
-                        printw("Attack: %d\n", poke.attack);
-                        printw("Defense: %d\n", poke.defense);
-                        printw("Special Attack: %d\n", poke.special_attack);
-                        printw("Special Defense: %d\n", poke.special_defense);
-                        printw("Speed: %d\n", poke.speed);
-                        printw("Accuracy: %d\n", poke.accuracy);
-                        printw("Evasion: %d\n", poke.evasion);
-                        printw("Moves:\n");
-                        for (int i = 0; i < poke.moves.size(); i++) {
-                                printw("- %s\n",
-                                       poke.moves[i].identifier.c_str());
-                        }
-                        if (poke.poke_gender == gender::MALE) {
-                                printw("Gender: Male\n");
-                        } else {
-                                printw("Gender: Female\n");
-                        }
-                        if (poke.shiney) {
-                                printw("Pokemon is shiney!!!\n");
-                        } else {
-                                printw("Pokemon is not shiney.\n");
-                        }
-
-                        refresh();
-
-                        while (getch() != KEY_ESC)
-                                ;
-
+                        wild_pokemon_battle(cur_chunk, csv, player);
                         return 0;
                 }
         }
@@ -2068,7 +2079,7 @@ int do_tick(chunk_t *world[WORLD_SIZE][WORLD_SIZE], cord_t *cur_chunk_cord,
                                 handle_pc_movements(
                                     &next_cord, entity_pos, cur_chunk,
                                     &cost_to_move, &turn_completed, &message,
-                                    hiker_dist, rival_dist, csv);
+                                    hiker_dist, rival_dist, csv, entity);
                                 break;
                         case 'k':
                         case '8':
@@ -2077,7 +2088,7 @@ int do_tick(chunk_t *world[WORLD_SIZE][WORLD_SIZE], cord_t *cur_chunk_cord,
                                 handle_pc_movements(
                                     &next_cord, entity_pos, cur_chunk,
                                     &cost_to_move, &turn_completed, &message,
-                                    hiker_dist, rival_dist, csv);
+                                    hiker_dist, rival_dist, csv, entity);
                                 break;
                         case '9':
                         case 'u':
@@ -2086,7 +2097,7 @@ int do_tick(chunk_t *world[WORLD_SIZE][WORLD_SIZE], cord_t *cur_chunk_cord,
                                 handle_pc_movements(
                                     &next_cord, entity_pos, cur_chunk,
                                     &cost_to_move, &turn_completed, &message,
-                                    hiker_dist, rival_dist, csv);
+                                    hiker_dist, rival_dist, csv, entity);
                                 break;
                         case '6':
                         case 'l':
@@ -2095,7 +2106,7 @@ int do_tick(chunk_t *world[WORLD_SIZE][WORLD_SIZE], cord_t *cur_chunk_cord,
                                 handle_pc_movements(
                                     &next_cord, entity_pos, cur_chunk,
                                     &cost_to_move, &turn_completed, &message,
-                                    hiker_dist, rival_dist, csv);
+                                    hiker_dist, rival_dist, csv, entity);
                                 break;
                         case '3':
                         case 'n':
@@ -2104,7 +2115,7 @@ int do_tick(chunk_t *world[WORLD_SIZE][WORLD_SIZE], cord_t *cur_chunk_cord,
                                 handle_pc_movements(
                                     &next_cord, entity_pos, cur_chunk,
                                     &cost_to_move, &turn_completed, &message,
-                                    hiker_dist, rival_dist, csv);
+                                    hiker_dist, rival_dist, csv, entity);
                                 break;
                         case '2':
                         case 'j':
@@ -2113,7 +2124,7 @@ int do_tick(chunk_t *world[WORLD_SIZE][WORLD_SIZE], cord_t *cur_chunk_cord,
                                 handle_pc_movements(
                                     &next_cord, entity_pos, cur_chunk,
                                     &cost_to_move, &turn_completed, &message,
-                                    hiker_dist, rival_dist, csv);
+                                    hiker_dist, rival_dist, csv, entity);
                                 break;
                         case '1':
                         case 'b':
@@ -2122,7 +2133,7 @@ int do_tick(chunk_t *world[WORLD_SIZE][WORLD_SIZE], cord_t *cur_chunk_cord,
                                 handle_pc_movements(
                                     &next_cord, entity_pos, cur_chunk,
                                     &cost_to_move, &turn_completed, &message,
-                                    hiker_dist, rival_dist, csv);
+                                    hiker_dist, rival_dist, csv, entity);
                                 break;
                         case 'h':
                         case '4':
@@ -2131,7 +2142,7 @@ int do_tick(chunk_t *world[WORLD_SIZE][WORLD_SIZE], cord_t *cur_chunk_cord,
                                 handle_pc_movements(
                                     &next_cord, entity_pos, cur_chunk,
                                     &cost_to_move, &turn_completed, &message,
-                                    hiker_dist, rival_dist, csv);
+                                    hiker_dist, rival_dist, csv, entity);
                                 break;
                         case '>':
                                 land_pc_is_on =
@@ -2154,7 +2165,7 @@ int do_tick(chunk_t *world[WORLD_SIZE][WORLD_SIZE], cord_t *cur_chunk_cord,
                                 handle_pc_movements(
                                     &next_cord, entity_pos, cur_chunk,
                                     &cost_to_move, &turn_completed, &message,
-                                    hiker_dist, rival_dist, csv);
+                                    hiker_dist, rival_dist, csv, entity);
                                 break;
                         case 't':
                                 display_trainers();
