@@ -1,6 +1,7 @@
 #include "csv.h"
 #include "sc_heap.h"
 #include <algorithm>
+#include <asm-generic/errno.h>
 #include <climits>
 #include <cmath>
 #include <cstdlib>
@@ -1422,7 +1423,7 @@ int select_poke_screen(entity_t *player) {
     refresh();
 
     int select_poke = -1;
-    while (select_poke < 0 || player->pokes->size() < select_poke ||
+    while (select_poke < 0 || player->pokes->size() - 1 < select_poke ||
            player->pokes->at(select_poke).hp == 0) {
         select_poke = getch() - '1';
     }
@@ -1448,7 +1449,7 @@ int select_fainted_poke_screen(entity_t *player) {
     refresh();
 
     int select_poke = -1;
-    while (select_poke < 0 || player->pokes->size() < select_poke ||
+    while (select_poke < 0 || player->pokes->size() - 1 < select_poke ||
            player->pokes->at(select_poke).hp != 0) {
         select_poke = getch() - '1';
     }
@@ -2172,6 +2173,7 @@ int do_tick(chunk_t *world[WORLD_SIZE][WORLD_SIZE], cord_t *cur_chunk_cord,
     int command;
     char const *message;
     int fly_f = 0;
+    char bag_input = '0';
 
     switch (entity->movement_type) {
     case PC:
@@ -2280,6 +2282,46 @@ int do_tick(chunk_t *world[WORLD_SIZE][WORLD_SIZE], cord_t *cur_chunk_cord,
             case 'f':
                 display_fly_screen(&turn_completed, &message, cur_chunk_cord,
                                    &fly_f, &cost_to_move);
+                break;
+            case 'B':
+                clear();
+                printw("Inventory:\n");
+                printw(" 1) Potions: %d\n", inventory->potions);
+                printw(" 2) Revives: %d\n", inventory->revives);
+
+                bag_input = '0';
+                while (bag_input != '1' && bag_input != '2') {
+                    bag_input = getch();
+                    if (bag_input == '1') {
+                        if (inventory->potions > 0) {
+                            inventory->potions--;
+                            int potion_input_i = select_poke_screen(entity);
+
+                            if (potion_input_i != -1) {
+                                pokemon *poke =
+                                    &entity->pokes->at(potion_input_i);
+                                poke->hp =
+                                    std::min(poke->hp_max, poke->hp + 20);
+                            }
+                        } else {
+                            bag_input = -1;
+                        }
+                    } else if (bag_input == '2') {
+                        if (inventory->revives > 0) {
+                            inventory->revives--;
+                            int revive_input_i =
+                                select_fainted_poke_screen(entity);
+
+                            if (revive_input_i != -1) {
+                                pokemon *poke =
+                                    &entity->pokes->at(revive_input_i);
+                                poke->hp = poke->hp_max / 2;
+                            }
+                        } else {
+                            bag_input = -1;
+                        }
+                    }
+                }
                 break;
             default:
                 message = "Invalid Command";
