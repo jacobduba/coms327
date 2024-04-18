@@ -1,3 +1,107 @@
+commit 10d8d1ce494ca651ce0261448f554a57d608c59b
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Thu Apr 18 06:27:45 2024 -0500
+
+    Fix bug where pokes are lost travelling between chunks
+
+commit 6f9e9b62103434803d3946e4e4985338fd66016b
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Thu Apr 18 06:09:13 2024 -0500
+
+    Working bag button!
+
+commit 181e803002511d4c7449359e510e6ac8f2dd096f
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Thu Apr 18 06:00:14 2024 -0500
+
+    Fix bug with damage
+
+commit 6a742c0ab0cca156890735e933c437fd567c3be8
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Thu Apr 18 05:02:16 2024 -0500
+
+    Buildings work as indended
+
+commit ee7b8d178dee2b0cbb6b16f70ba3296dabf90288
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Thu Apr 18 04:52:56 2024 -0500
+
+    Pokeballs working
+
+commit 0717dd8218e98614f58819749d8b82b670cbf6f6
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Thu Apr 18 02:00:07 2024 -0500
+
+    Working wild encounters
+
+commit 5ad6cdc9bc9dbbd548087133080570698f1ac211
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Thu Apr 18 01:12:36 2024 -0500
+
+    Fleeing and swapping pokemon
+
+commit d556e24c2d2bafbb2a0583da06dc359e335d3972
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Wed Apr 17 23:40:50 2024 -0500
+
+    Step by step combat
+
+commit 4362dd3801ae09bc146d3298009c976d1d30a8e8
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Wed Apr 17 19:04:13 2024 -0500
+
+    WIP battles
+
+commit 6ffb509f4603b9cc5bd7e188b32ad176168f3250
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Wed Apr 17 13:52:15 2024 -0500
+
+    Subtract health from pokemon
+
+commit 1f72793e6e168f8e13171b02e296e336fb3eec92
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Wed Apr 17 10:51:50 2024 -0500
+
+    Switch pokemon selection method
+
+commit 4284898a7b791eb293a3a2d9a0ac5ec26cc747bb
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Tue Apr 16 21:46:26 2024 -0500
+
+    Working types
+    
+    Also got debugging working again
+
+commit cd54153b6343b79fda3df8dce32669a7f098a391
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Tue Apr 16 20:47:13 2024 -0500
+
+    Remove compiler warnings
+
+commit 04f1daa5e3eb56e8cf008e0506c85e73cb49c02d
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Tue Apr 16 20:42:34 2024 -0500
+
+    Remove objects
+
+commit 9dfba1755198628737b8edd3d52d139917d2fc43
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Tue Apr 16 19:25:39 2024 -0500
+
+    Save PDF
+
+commit 4e4cc181894037cbe5dfa1f6707eecafcb0bd483
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Tue Apr 16 19:25:33 2024 -0500
+
+    Compiled and linked seperately in Makefile
+
+commit e22cdd8b6e442c714f2e71740c7b461ee5dc568a
+Author: Jacob Duba <jacob@mooshoe.me>
+Date:   Thu Apr 11 02:37:23 2024 -0500
+
+    Submission
+
 commit ca80a4792948424599bff8491329fa23ba79cfe3
 Author: Jacob Duba <jacob@mooshoe.me>
 Date:   Thu Apr 11 02:35:29 2024 -0500
