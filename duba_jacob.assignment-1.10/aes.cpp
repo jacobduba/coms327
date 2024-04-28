@@ -1,4 +1,5 @@
 #include <cstdint>
+#include <cstring>
 #include <iostream>
 
 static const uint8_t s_box[256] = {
@@ -23,7 +24,8 @@ static const uint8_t s_box[256] = {
     0x61, 0x35, 0x57, 0xb9, 0x86, 0xc1, 0x1d, 0x9e, 0xe1, 0xf8, 0x98, 0x11,
     0x69, 0xd9, 0x8e, 0x94, 0x9b, 0x1e, 0x87, 0xe9, 0xce, 0x55, 0x28, 0xdf,
     0x8c, 0xa1, 0x89, 0x0d, 0xbf, 0xe6, 0x42, 0x68, 0x41, 0x99, 0x2d, 0x0f,
-    0xb0, 0x54, 0xbb, 0x16};
+    0xb0, 0x54, 0xbb, 0x16,
+};
 
 static const uint8_t inv_s_box[256] = {
     0x52, 0x09, 0x6A, 0xD5, 0x30, 0x36, 0xA5, 0x38, 0xBF, 0x40, 0xA3, 0x9E,
@@ -50,7 +52,57 @@ static const uint8_t inv_s_box[256] = {
     0x55, 0x21, 0x0C, 0x7D,
 };
 
-int expand_key(uint8_t round_keys[10][16], uint8_t key[16]) { return 0; }
+int rot_word(uint8_t word[4]) {
+    uint8_t tmp = word[0];
+    word[0] = word[1];
+    word[1] = word[2];
+    word[2] = word[3];
+    word[3] = tmp;
+
+    return 0;
+}
+
+int sub_word(uint8_t word[4]) {
+    word[0] = s_box[word[0]];
+    word[1] = s_box[word[1]];
+    word[2] = s_box[word[2]];
+    word[3] = s_box[word[3]];
+
+    return 0;
+}
+
+uint8_t rcon[10] = {0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1B, 0x36};
+
+int expand_keys(uint8_t round_keys[10][4][4], uint8_t key[4][4]) {
+    memcpy(round_keys, key, sizeof(uint8_t) * 16);
+
+    uint8_t word[4];
+    word[0] = key[0][0];
+    word[1] = key[0][1];
+    word[2] = key[0][2];
+    word[3] = key[0][3];
+
+    rot_word(word);
+    sub_word(word);
+    uint8_t test[4];
+
+    word[0] ^= rcon[0];
+
+    // 128bit AES has 10 rounds
+    for (int i = 1; i < 10; i++) {
+        uint8_t word[4];
+        word[0] = round_keys[i][0][0];
+        word[1] = round_keys[i][0][1];
+        word[2] = round_keys[i][0][2];
+        word[3] = round_keys[i][0][3];
+
+        rot_word(word);
+        sub_word(word);
+        word[0] ^= rcon[i];
+    }
+
+    return 0;
+}
 
 int main(int argc, char *argv[]) {
     const char *str = "16 bit string..";
@@ -59,8 +111,13 @@ int main(int argc, char *argv[]) {
     //     printf("%x ", str[i]);
     // }
 
-    uint8_t init_vector[16] = {0x6c, 0x25, 0x2a, 0xcd, 0xf6, 0x89, 0x5c, 0x11,
-                               0x9c, 0x9e, 0xd5, 0x5e, 0x78, 0xee, 0x58, 0x40};
+    uint8_t aes_key[4][4] = {{0x6c, 0x25, 0x2a, 0xcd},
+                             {0xf6, 0x89, 0x5c, 0x11},
+                             {0x9c, 0x9e, 0xd5, 0x5e},
+                             {0x78, 0xee, 0x58, 0x40}};
+
+    uint8_t round_keys[10][4][4] = {{{0}}};
+    expand_keys(round_keys, aes_key);
 
     return 0;
 }
