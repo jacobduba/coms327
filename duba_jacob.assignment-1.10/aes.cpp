@@ -378,7 +378,7 @@ void encrypt_block(uint8_t state[4][4], uint8_t keys[ROUNDS + 1][4][4]) {
     for (int i = 1; i < 10; i++) {
         sub_bytes(state);
         shift_rows(state);
-        // mix_columns(state);
+        mix_columns(state);
         add_round_key(state, keys[i]);
     }
 
@@ -393,7 +393,7 @@ void decrypt_block(uint8_t state[4][4], uint8_t keys[ROUNDS + 1][4][4]) {
     for (int i = 9; i > 0; i--) {
         inv_sub_bytes(state);
         inv_shift_rows(state);
-        // inv_mix_columns(state);
+        inv_mix_columns(state);
         add_round_key(state, keys[i]);
     }
 
@@ -421,30 +421,47 @@ int main(int argc, char *argv[]) {
     //                          {0x9c, 0x9e, 0xd5, 0x7e},
     //                          {0x78, 0xee, 0x58, 0x40}};
 
-    uint8_t aes_key[4][4] = {{0xef, 0x74, 0x9f, 0xf9},
-                             {0xa0, 0x48, 0xba, 0xd0},
-                             {0xdd, 0x80, 0x80, 0x7f},
-                             {0xc4, 0x9e, 0x1c, 0xf7}};
+    uint8_t test_block[4][4] = {{0xdb, 0xf2, 0xd4, 0x2d},
+                                {0x13, 0x0a, 0xd4, 0x26},
+                                {0x53, 0x22, 0xd4, 0x31},
+                                {0x45, 0x5c, 0xd5, 0x4c}};
 
-    uint8_t keys[ROUNDS + 1][4][4] = {{{0}}};
-    expand_keys(keys, aes_key);
-
-    uint8_t block_test[4][4] = {{0x0, 0x1, 0x2, 0x3},
-                                {0x4, 0x5, 0x6, 0x7},
-                                {0x8, 0x9, 0x10, 0x11},
-                                {0x12, 0x13, 0x14, 0x15}};
-    print_block(block_test);
+    print_block(test_block);
     printf("\n");
 
-    encrypt_block(block_test, keys);
+    mix_columns(test_block);
 
-    print_block(block_test);
+    print_block(test_block);
     printf("\n");
 
-    decrypt_block(block_test, keys);
+    inv_mix_columns(test_block);
 
-    print_block(block_test);
-    printf("\n");
+    print_block(test_block);
+
+    // uint8_t aes_key[4][4] = {{0xef, 0x74, 0x9f, 0xf9},
+    //                          {0xa0, 0x48, 0xba, 0xd0},
+    //                          {0xdd, 0x80, 0x80, 0x7f},
+    //                          {0xc4, 0x9e, 0x1c, 0xf7}};
+
+    // uint8_t keys[ROUNDS + 1][4][4] = {{{0}}};
+    // expand_keys(keys, aes_key);
+
+    // uint8_t block_test[4][4] = {{0x0, 0x1, 0x2, 0x3},
+    //                             {0x4, 0x5, 0x6, 0x7},
+    //                             {0x8, 0x9, 0x10, 0x11},
+    //                             {0x12, 0x13, 0x14, 0x15}};
+    // print_block(block_test);
+    // printf("\n");
+
+    // encrypt_block(block_test, keys);
+
+    // print_block(block_test);
+    // printf("\n");
+
+    // decrypt_block(block_test, keys);
+
+    // print_block(block_test);
+    // printf("\n");
 
     return 0;
 }
