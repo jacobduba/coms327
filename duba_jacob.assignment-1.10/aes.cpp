@@ -75,7 +75,7 @@ int sub_word(uint8_t word[4]) {
 
 uint8_t rcon[10] = {0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1B, 0x36};
 
-int expand_keys(uint8_t round_keys[ROUNDS][4][4], uint8_t key[4][4]) {
+int expand_keys(uint8_t keys[ROUNDS + 1][4][4], uint8_t key[4][4]) {
     const int words_c = (ROUNDS + 1) * 4;
     uint8_t words[words_c][4];
 
@@ -99,7 +99,7 @@ int expand_keys(uint8_t round_keys[ROUNDS][4][4], uint8_t key[4][4]) {
         words[i][3] ^= words[i - 4][3];
     }
 
-    memcpy(round_keys, words[4], sizeof(uint8_t) * ROUNDS * 4 * 4);
+    memcpy(keys, words[0], sizeof(uint8_t) * (ROUNDS + 1) * 4 * 4);
 
     return 0;
 }
@@ -121,8 +121,8 @@ int main(int argc, char *argv[]) {
                              {0xdd, 0x80, 0x80, 0x7f},
                              {0xc4, 0x9e, 0x1c, 0xf7}};
 
-    uint8_t round_keys[ROUNDS][4][4] = {{{0}}};
-    expand_keys(round_keys, aes_key);
+    uint8_t keys[ROUNDS + 1][4][4] = {{{0}}};
+    expand_keys(keys, aes_key);
 
     return 0;
 }
