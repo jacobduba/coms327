@@ -272,8 +272,18 @@ void sub_bytes(uint8_t state[4][4]) {
     }
 }
 
+void inv_sub_bytes(uint8_t state[4][4]) {
+    for (int i = 0; i < 4; i++) {
+        for (int j = 0; j < 4; j++) {
+            state[i][j] = inv_s_box[state[i][j]];
+        }
+    }
+}
+
 void shift_rows(uint8_t state[4][4]) {
-    uint8_t tmp = state[1][0];
+    uint8_t tmp;
+
+    tmp = state[1][0];
     state[1][0] = state[1][1];
     state[1][1] = state[1][2];
     state[1][2] = state[1][3];
@@ -284,12 +294,36 @@ void shift_rows(uint8_t state[4][4]) {
     state[2][2] = tmp;
     tmp = state[2][1];
     state[2][1] = state[2][3];
-    state[2][3] = state[2][1];
+    state[2][3] = tmp;
 
     tmp = state[3][3];
     state[3][3] = state[3][2];
     state[3][2] = state[3][1];
+    state[3][1] = state[3][0];
     state[3][0] = tmp;
+}
+
+void inv_shift_rows(uint8_t state[4][4]) {
+    uint8_t tmp;
+
+    tmp = state[1][3];
+    state[1][3] = state[1][2];
+    state[1][2] = state[1][1];
+    state[1][1] = state[1][0];
+    state[1][0] = tmp;
+
+    tmp = state[2][0];
+    state[2][0] = state[2][2];
+    state[2][2] = tmp;
+    tmp = state[2][1];
+    state[2][1] = state[2][3];
+    state[2][3] = tmp;
+
+    tmp = state[3][0];
+    state[3][0] = state[3][1];
+    state[3][1] = state[3][2];
+    state[3][2] = state[3][3];
+    state[3][3] = tmp;
 }
 
 void mix_columns(uint8_t state[4][4]) {
@@ -315,19 +349,64 @@ void mix_columns(uint8_t state[4][4]) {
     }
 }
 
-void encypt_block(uint8_t state[4][4], uint8_t keys[ROUNDS + 1][4][4]) {
+void inv_mix_columns(uint8_t state[4][4]) {
+    uint8_t d0, d1, d2, d3, b0, b1, b2, b3;
+
+    // Matrix visualization
+    // (https://wikimedia.org/api/rest_v1/media/math/render/svg/4e15e238e487e80529d11bb6fcb7b7205414a1db)
+    for (int j = 0; j < 4; j++) {
+        d0 = state[0][j];
+        d1 = state[1][j];
+        d2 = state[2][j];
+        d3 = state[3][j];
+
+        b0 = mult_14[d0] ^ mult_11[d1] ^ mult_13[d2] ^ mult_9[d3];
+        b1 = mult_9[d0] ^ mult_14[d1] ^ mult_11[d2] ^ mult_13[d3];
+        b2 = mult_13[d0] ^ mult_9[d1] ^ mult_14[d2] ^ mult_11[d3];
+        b3 = mult_11[d0] ^ mult_13[d1] ^ mult_9[d2] ^ mult_14[d3];
+
+        state[0][j] = b0;
+        state[1][j] = b1;
+        state[2][j] = b2;
+        state[3][j] = b3;
+    }
+}
+
+void encrypt_block(uint8_t state[4][4], uint8_t keys[ROUNDS + 1][4][4]) {
     add_round_key(state, keys[0]);
 
     for (int i = 1; i < 10; i++) {
         sub_bytes(state);
         shift_rows(state);
-        mix_columns(state);
+        // mix_columns(state);
         add_round_key(state, keys[i]);
     }
 
     sub_bytes(state);
     shift_rows(state);
     add_round_key(state, keys[10]);
+}
+
+void decrypt_block(uint8_t state[4][4], uint8_t keys[ROUNDS + 1][4][4]) {
+    add_round_key(state, keys[10]);
+
+    for (int i = 9; i > 0; i--) {
+        inv_sub_bytes(state);
+        inv_shift_rows(state);
+        // inv_mix_columns(state);
+        add_round_key(state, keys[i]);
+    }
+
+    inv_sub_bytes(state);
+    inv_shift_rows(state);
+    add_round_key(state, keys[0]);
+}
+
+void print_block(uint8_t state[4][4]) {
+    for (int i = 0; i < 4; i++) {
+        printf("%02x %02x %02x %02x\n", state[i][0], state[i][1], state[i][2],
+               state[i][3]);
+    }
 }
 
 int main(int argc, char *argv[]) {
@@ -354,7 +433,18 @@ int main(int argc, char *argv[]) {
                                 {0x4, 0x5, 0x6, 0x7},
                                 {0x8, 0x9, 0x10, 0x11},
                                 {0x12, 0x13, 0x14, 0x15}};
-    encypt_block(block_test, keys);
+    print_block(block_test);
+    printf("\n");
+
+    encrypt_block(block_test, keys);
+
+    print_block(block_test);
+    printf("\n");
+
+    decrypt_block(block_test, keys);
+
+    print_block(block_test);
+    printf("\n");
 
     return 0;
 }
