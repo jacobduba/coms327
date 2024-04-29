@@ -2,6 +2,8 @@
 #include <cstring>
 #include <iostream>
 
+#define ROUNDS 10
+
 static const uint8_t s_box[256] = {
     0x63, 0x7c, 0x77, 0x7b, 0xf2, 0x6b, 0x6f, 0xc5, 0x30, 0x01, 0x67, 0x2b,
     0xfe, 0xd7, 0xab, 0x76, 0xca, 0x82, 0xc9, 0x7d, 0xfa, 0x59, 0x47, 0xf0,
@@ -73,33 +75,31 @@ int sub_word(uint8_t word[4]) {
 
 uint8_t rcon[10] = {0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1B, 0x36};
 
-int expand_keys(uint8_t round_keys[10][4][4], uint8_t key[4][4]) {
-    memcpy(round_keys, key, sizeof(uint8_t) * 16);
+int expand_keys(uint8_t round_keys[ROUNDS][4][4], uint8_t key[4][4]) {
+    const int words_c = (ROUNDS + 1) * 4;
+    uint8_t words[words_c][4];
 
-    uint8_t word[4];
-    word[0] = key[0][0];
-    word[1] = key[0][1];
-    word[2] = key[0][2];
-    word[3] = key[0][3];
+    memcpy(words, key, sizeof(uint8_t) * 16);
 
-    rot_word(word);
-    sub_word(word);
-    uint8_t test[4];
+    for (int i = 4; i < words_c; i++) {
+        words[i][0] = words[i - 1][0];
+        words[i][1] = words[i - 1][1];
+        words[i][2] = words[i - 1][2];
+        words[i][3] = words[i - 1][3];
 
-    word[0] ^= rcon[0];
+        if (i % 4 == 0) {
+            rot_word(words[i]);
+            sub_word(words[i]);
+            words[i][0] ^= rcon[(i / 4) - 1];
+        }
 
-    // 128bit AES has 10 rounds
-    for (int i = 1; i < 10; i++) {
-        uint8_t word[4];
-        word[0] = round_keys[i][0][0];
-        word[1] = round_keys[i][0][1];
-        word[2] = round_keys[i][0][2];
-        word[3] = round_keys[i][0][3];
-
-        rot_word(word);
-        sub_word(word);
-        word[0] ^= rcon[i];
+        words[i][0] ^= words[i - 4][0];
+        words[i][1] ^= words[i - 4][1];
+        words[i][2] ^= words[i - 4][2];
+        words[i][3] ^= words[i - 4][3];
     }
+
+    memcpy(round_keys, words[4], sizeof(uint8_t) * ROUNDS * 4 * 4);
 
     return 0;
 }
@@ -111,12 +111,17 @@ int main(int argc, char *argv[]) {
     //     printf("%x ", str[i]);
     // }
 
-    uint8_t aes_key[4][4] = {{0x6c, 0x25, 0x2a, 0xcd},
-                             {0xf6, 0x89, 0x5c, 0x11},
-                             {0x9c, 0x9e, 0xd5, 0x5e},
-                             {0x78, 0xee, 0x58, 0x40}};
+    // uint8_t aes_key[4][4] = {{0x6c, 0x25, 0x2a, 0xcd},
+    //                          {0xf6, 0x89, 0x5c, 0x11},
+    //                          {0x9c, 0x9e, 0xd5, 0x7e},
+    //                          {0x78, 0xee, 0x58, 0x40}};
 
-    uint8_t round_keys[10][4][4] = {{{0}}};
+    uint8_t aes_key[4][4] = {{0xef, 0x74, 0x9f, 0xf9},
+                             {0xa0, 0x48, 0xba, 0xd0},
+                             {0xdd, 0x80, 0x80, 0x7f},
+                             {0xc4, 0x9e, 0x1c, 0xf7}};
+
+    uint8_t round_keys[ROUNDS][4][4] = {{{0}}};
     expand_keys(round_keys, aes_key);
 
     return 0;
