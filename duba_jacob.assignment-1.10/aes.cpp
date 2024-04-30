@@ -1,5 +1,6 @@
 #include <cstdint>
 #include <cstring>
+#include <fstream>
 #include <iostream>
 
 #define ROUNDS 10
@@ -409,59 +410,102 @@ void print_block(uint8_t state[4][4]) {
     }
 }
 
+void str_to_block(uint8_t state[4][4], char str[16]) {
+    for (int i = 0; i < 16; i++) {
+        state[i / 4][i % 4] = str[i];
+    }
+}
+
+void block_to_str(char str[16], uint8_t state[4][4]) {
+    for (int i = 0; i < 16; i++) {
+        str[i] = state[i / 4][i % 4];
+    }
+}
+
 int main(int argc, char *argv[]) {
-    // const char *str = "16 bit string..";
+    // printf("%s", argv[0]);
 
-    // for (int i = 0; i < 16; i++) {
-    //     printf("%x ", str[i]);
-    // }
+    // uint8_t aes_key[4][4] = {{0xef, 0x74, 0x9f, 0xf9},
+    //                          {0xa0, 0x48, 0xba, 0xd0},
+    //                          {0xdd, 0x80, 0x80, 0x7f},
+    //                          {0xc4, 0x9e, 0x1c, 0xf7}};
 
-    // uint8_t aes_key[4][4] = {{0x6c, 0x25, 0x2a, 0xcd},
-    //                          {0xf6, 0x89, 0x5c, 0x11},
-    //                          {0x9c, 0x9e, 0xd5, 0x7e},
-    //                          {0x78, 0xee, 0x58, 0x40}};
+    // uint8_t keys[ROUNDS + 1][4][4] = {{{0}}};
+    // expand_keys(keys, aes_key);
 
-    // uint8_t test_block[4][4] = {{0xdb, 0xf2, 0xd4, 0x2d},
-    //                             {0x13, 0x0a, 0xd4, 0x26},
-    //                             {0x53, 0x22, 0xd4, 0x31},
-    //                             {0x45, 0x5c, 0xd5, 0x4c}};
-
-    // print_block(test_block);
+    // uint8_t block_test[4][4] = {{0x0, 0x1, 0x2, 0x3},
+    //                             {0x4, 0x5, 0x6, 0x7},
+    //                             {0x8, 0x9, 0x10, 0x11},
+    //                             {0x12, 0x13, 0x14, 0x15}};
+    // print_block(block_test);
     // printf("\n");
 
-    // mix_columns(test_block);
+    // encrypt_block(block_test, keys);
 
-    // print_block(test_block);
+    // print_block(block_test);
     // printf("\n");
 
-    // inv_mix_columns(test_block);
+    // decrypt_block(block_test, keys);
 
-    // print_block(test_block);
+    // print_block(block_test);
+    // printf("\n");
 
-    uint8_t aes_key[4][4] = {{0xef, 0x74, 0x9f, 0xf9},
-                             {0xa0, 0x48, 0xba, 0xd0},
-                             {0xdd, 0x80, 0x80, 0x7f},
-                             {0xc4, 0x9e, 0x1c, 0xf7}};
+    if (argc == 1 || (argc == 2 && strcmp(argv[1], "--help") == 0)) {
+        std::cout << "usage: aes -k <aes_key_file> -i <input_file> [-e | -d] "
+                     "<output_file>\n";
+        // "Input is stdin.\n"
+        // "Output is stdout.\n";
+    } else {
+        uint8_t aes_key[4][4];
 
-    uint8_t keys[ROUNDS + 1][4][4] = {{{0}}};
-    expand_keys(keys, aes_key);
+        std::ifstream key_file(argv[2]);
+        std::string key;
 
-    uint8_t block_test[4][4] = {{0x0, 0x1, 0x2, 0x3},
-                                {0x4, 0x5, 0x6, 0x7},
-                                {0x8, 0x9, 0x10, 0x11},
-                                {0x12, 0x13, 0x14, 0x15}};
-    print_block(block_test);
-    printf("\n");
+        char key_buffer[3];
+        for (int i = 0; i < 4; i++) {
+            for (int j = 0; j < 4; j++) {
+                key_file.read(key_buffer, 2);
+                aes_key[i][j] = std::stoi(key_buffer, nullptr, 16);
+            }
+        }
 
-    encrypt_block(block_test, keys);
+        uint8_t keys[ROUNDS + 1][4][4] = {{{0}}};
+        expand_keys(keys, aes_key);
 
-    print_block(block_test);
-    printf("\n");
+        std::ifstream input_file(argv[4], std::ios::in | std::ios::binary);
 
-    decrypt_block(block_test, keys);
+        enum options { NA, ENCRYPTION, DECRYPTION };
+        options flag = options::NA;
+        if (strcmp("-e", argv[5]) == 0) {
+            flag = options::ENCRYPTION;
+        } else if (strcmp("-d", argv[5]) == 0) {
+            flag = options::DECRYPTION;
+        }
 
-    print_block(block_test);
-    printf("\n");
+        std::ofstream output_file(argv[6], std::ios::out | std::ios::binary);
+
+        if (flag == options::ENCRYPTION) {
+            char in_buffer[16];
+            char out_buffer[16];
+            uint8_t state[4][4];
+            while (input_file.read(in_buffer, sizeof(in_buffer))) {
+                str_to_block(state, in_buffer);
+                encrypt_block(state, keys);
+                block_to_str(out_buffer, state);
+                output_file.write(out_buffer, sizeof(out_buffer));
+            }
+        } else if (flag == options::DECRYPTION) {
+            char in_buffer[16];
+            char out_buffer[16];
+            uint8_t state[4][4];
+            while (input_file.read(in_buffer, sizeof(in_buffer))) {
+                str_to_block(state, in_buffer);
+                decrypt_block(state, keys);
+                block_to_str(out_buffer, state);
+                output_file.write(out_buffer, sizeof(out_buffer));
+            }
+        }
+    }
 
     return 0;
 }
