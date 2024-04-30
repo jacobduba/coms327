@@ -493,7 +493,15 @@ int main(int argc, char *argv[]) {
                 encrypt_block(state, keys);
                 block_to_str(out_buffer, state);
                 output_file.write(out_buffer, sizeof(out_buffer));
+
+                for (int i = 0; i < 16; i++) {
+                    in_buffer[i] = 0;
+                }
             }
+            str_to_block(state, in_buffer);
+            encrypt_block(state, keys);
+            block_to_str(out_buffer, state);
+            output_file.write(out_buffer, sizeof(out_buffer));
         } else if (flag == options::DECRYPTION) {
             char in_buffer[16];
             char out_buffer[16];
