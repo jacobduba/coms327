@@ -492,10 +492,6 @@ int main(int argc, char *argv[]) {
             uint8_t state[4][4];
             while (input_file.read(in_buffer, sizeof(in_buffer))) {
                 str_to_block(state, in_buffer);
-
-                print_block(state);
-                std::cout << input_file.gcount() << std::endl;
-
                 encrypt_block(state, keys);
                 block_to_str(out_buffer, state);
                 output_file.write(out_buffer, sizeof(out_buffer));
@@ -506,8 +502,6 @@ int main(int argc, char *argv[]) {
             }
 
             str_to_block(state, in_buffer);
-            print_block(state);
-            std::cout << input_file.gcount() << std::endl;
             encrypt_block(state, keys);
             block_to_str(out_buffer, state);
             output_file.write(out_buffer, sizeof(out_buffer));
@@ -522,7 +516,6 @@ int main(int argc, char *argv[]) {
                 block_to_str(out_buffer, state);
                 int not_padded = 16;
                 if (input_file.peek() == EOF) {
-                    std::cout << out_buffer;
                     for (int i = 15; i > 0 && out_buffer[i] == 0; i--) {
                         not_padded--;
                     }
