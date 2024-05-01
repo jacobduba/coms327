@@ -1,7 +1,9 @@
 #include <cstdint>
+#include <cstdio>
 #include <cstring>
 #include <fstream>
 #include <iostream>
+#include <string>
 
 #define ROUNDS 10
 
@@ -490,15 +492,22 @@ int main(int argc, char *argv[]) {
             uint8_t state[4][4];
             while (input_file.read(in_buffer, sizeof(in_buffer))) {
                 str_to_block(state, in_buffer);
+
+                print_block(state);
+                std::cout << input_file.gcount() << std::endl;
+
                 encrypt_block(state, keys);
                 block_to_str(out_buffer, state);
                 output_file.write(out_buffer, sizeof(out_buffer));
-
-                for (int i = 0; i < 16; i++) {
-                    in_buffer[i] = 0;
-                }
             }
+
+            for (int i = 15; i > input_file.gcount() - 1; i--) {
+                in_buffer[i] = 0;
+            }
+
             str_to_block(state, in_buffer);
+            print_block(state);
+            std::cout << input_file.gcount() << std::endl;
             encrypt_block(state, keys);
             block_to_str(out_buffer, state);
             output_file.write(out_buffer, sizeof(out_buffer));
@@ -506,11 +515,19 @@ int main(int argc, char *argv[]) {
             char in_buffer[16];
             char out_buffer[16];
             uint8_t state[4][4];
-            while (input_file.read(in_buffer, sizeof(in_buffer))) {
+            while (input_file.read(in_buffer, sizeof(in_buffer)) &&
+                   !input_file.eof()) {
                 str_to_block(state, in_buffer);
                 decrypt_block(state, keys);
                 block_to_str(out_buffer, state);
-                output_file.write(out_buffer, sizeof(out_buffer));
+                int not_padded = 16;
+                if (input_file.peek() == EOF) {
+                    std::cout << out_buffer;
+                    for (int i = 15; i > 0 && out_buffer[i] == 0; i--) {
+                        not_padded--;
+                    }
+                }
+                output_file.write(out_buffer, sizeof(char) * not_padded);
             }
         }
     }
