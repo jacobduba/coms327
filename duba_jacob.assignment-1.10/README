@@ -1,0 +1,35 @@
+Programming Project 1.10 (Choose Your Own) by Jacob Duba <jduba@iastate.edu>
+
+I implemented AES encryption for this assignment.
+My utility encrypts and decrypts files given a .key file.
+
+Building
+========
+
+$ make
+
+Usage
+=====
+
+$ ./aes.out --help
+usage: aes -k <aes_key_file> -i <input_file> [-e | -d] <output_file>
+
+Guide
+====
+
+You will need to generate a 128b AES key. Openssl provides a utility for this.
+
+$ openssl rand -hex 16 > aes.key
+
+Encrypting the source:
+
+$ ./aes.out -k aes.key -i aes.cpp -e aes.cpp.enc
+
+Decrypting the encrypted source:
+
+$ ./aes.out -k aes.key -i aes.cpp.enc -d aes.cpp.enc.dec
+
+Clean
+=====
+
+$ make clean
